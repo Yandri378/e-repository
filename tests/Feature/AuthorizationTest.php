@@ -183,6 +183,22 @@ class AuthorizationTest extends TestCase
     }
 
     /**
+     * Test admin can delete user
+     */
+    public function test_admin_can_delete_user(): void
+    {
+        $response = $this
+            ->actingAs($this->admin)
+            ->from('/admin/users')
+            ->delete('/admin/users/' . $this->mahasiswa->id);
+
+        $response->assertRedirect('/admin/users');
+        $this->assertDatabaseMissing('users', [
+            'id' => $this->mahasiswa->id,
+        ]);
+    }
+
+    /**
      * Test Report page requires admin role
      */
 

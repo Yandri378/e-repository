@@ -123,6 +123,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/', [AdminUserController::class, 'index'])->name('index');
         Route::post('/', [AdminUserController::class, 'store'])->name('store');
         Route::patch('/{user}/status', [AdminUserController::class, 'updateStatus'])->name('status');
+        Route::delete('/{user}', [AdminUserController::class, 'destroy'])->name('destroy');
     });
 
     Route::middleware('role:admin')->prefix('admin/uploads')->name('admin.documents.')->group(function () {

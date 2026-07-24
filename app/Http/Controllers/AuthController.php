@@ -23,17 +23,25 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // Cari user berdasarkan Email, NIM, atau NIDN di database
         $user = User::where('email', $credentials['identifier'])
             ->orWhere('nim', $credentials['identifier'])
             ->orWhere('nidn', $credentials['identifier'])
             ->first();
 
-        if (!$user || !Auth::attempt(['email' => $user->email, 'password' => $credentials['password']], $request->boolean('remember'))) {
-            return back()->withErrors(['login' => 'Email/NIM/NIDN atau password tidak sesuai.'])->onlyInput('identifier');
+        // Jika user tidak ditemukan
+        if (!$user) {
+            return back()->withErrors(['login' => 'Email/NIM/NIDN tidak terdaftar.'])->onlyInput('identifier');
+        }
+
+        // Coba login dengan email user tersebut dan password yang diinput
+        if (!Auth::attempt(['email' => $user->email, 'password' => $credentials['password']], $request->boolean('remember'))) {
+            return back()->withErrors(['login' => 'Password yang Anda masukkan salah.'])->onlyInput('identifier');
         }
 
         $request->session()->regenerate();
 
+        // Cek status keaktifan akun
         if ($user->status_akun !== 'aktif') {
             Auth::logout();
             $request->session()->invalidate();
@@ -44,7 +52,17 @@ class AuthController extends Controller
             ]);
         }
 
-        return redirect()->route($user->role . '.dashboard');
+        // Cek role user dari database dan arahkan ke dashboard yang sesuai
+        if ($user->role === 'mahasiswa') {
+            return redirect()->route('mahasiswa.dashboard');
+        } elseif ($user->role === 'dosen') {
+            return redirect()->route('dosen.dashboard');
+        } elseif ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        // Jika role tidak dikenali, redirect ke halaman utama
+        return redirect()->route('home');
     }
 
     public function showRegister(?string $role = null)

@@ -78,6 +78,11 @@
                     <input type="hidden" name="status_akun" value="nonaktif">
                     <button class="btn secondary" type="submit">Nonaktifkan</button>
                 </form>
+                <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ $user->name }} secara permanen?')">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn danger" type="submit" style="background:#dc2626; color:#ffffff; border:none;">Hapus</button>
+                </form>
             </div>
         </article>
     @empty

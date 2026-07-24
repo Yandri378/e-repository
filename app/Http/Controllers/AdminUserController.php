@@ -75,4 +75,14 @@ class AdminUserController extends Controller
 
         return back()->with('status', 'Status akun '.$user->name.' berhasil diperbarui.');
     }
+
+    public function destroy(User $user)
+    {
+        abort_if($user->role === 'admin', 403, 'Akun admin tidak dapat dihapus dari halaman ini.');
+
+        $name = $user->name;
+        $user->delete();
+
+        return back()->with('status', 'Akun '.$name.' berhasil dihapus.');
+    }
 }
