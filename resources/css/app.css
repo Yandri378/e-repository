@@ -2157,8 +2157,6 @@ td {
 }
 
 @media (max-width: 900px) {
-    .site-header,
-    .main-nav,
     .site-footer {
         align-items: flex-start;
         flex-direction: column;
@@ -3364,4 +3362,206 @@ td {
     font-size: 0.9rem;
     font-weight: 600;
     text-align: center;
+}
+
+/* ==========================================================================
+   Comprehensive Responsive Styles (Laptop & Mobile Optimization)
+   All Pages, Views, Dashboards, Forms, Tables & Media
+   ========================================================================== */
+
+/* Universal Responsive Safeguards for All Devices */
+html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+img, svg, video, canvas, iframe {
+    max-width: 100%;
+    height: auto;
+}
+
+.site-shell, .section, .main-layout, .container, .auth-card, .admin-main, .module-card, .page-hero, .actor-hero {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+input, select, textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+table, .table-wrapper, pre, code {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Tablet & Mobile Screens (<= 992px) */
+@media (max-width: 992px) {
+    .page-hero,
+    .actor-hero {
+        padding: 2.5rem 1.25rem;
+    }
+
+    .page-hero h1,
+    .actor-hero h1 {
+        font-size: 1.75rem;
+        line-height: 1.25;
+    }
+
+    .admin-body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        position: relative;
+        height: auto;
+        padding: 1.25rem;
+        border-right: none;
+        border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.1));
+    }
+
+    .admin-menu {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .admin-main {
+        width: 100%;
+        padding: 1.25rem;
+        overflow-x: hidden;
+    }
+
+    .admin-overview {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .overview-metrics {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .role-dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .role-action-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .role-action-cta {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .role-action-cta .btn {
+        flex: 1;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .stats-section-inner,
+    .actor-grid-home {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .document-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        padding: 1.25rem;
+    }
+
+    .inline-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .inline-actions form,
+    .inline-actions .btn {
+        flex: 1 1 auto;
+        min-width: 90px;
+    }
+
+    .inline-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* Small Mobile Screens (<= 576px) */
+@media (max-width: 576px) {
+    .page-hero h1,
+    .actor-hero h1 {
+        font-size: 1.45rem;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .hero-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .admin-menu {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .overview-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .role-panel-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .role-panel-header .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .summary-mini-list {
+        grid-template-columns: 1fr;
+    }
+
+    .inline-actions form {
+        width: 100%;
+    }
+
+    .inline-actions .btn {
+        width: 100%;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
