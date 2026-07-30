@@ -1048,6 +1048,258 @@
                 width: 220px;
             }
         }
+
+        /* ===================== PUBLIC NAVBAR MOBILE POLISH ===================== */
+        @media (max-width: 980px) {
+            .site-header {
+                gap: 10px !important;
+                min-height: 64px !important;
+                padding: 10px 12px !important;
+                background: rgba(9, 45, 71, 0.96) !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+            }
+
+            .brand {
+                min-width: 0 !important;
+                gap: 0.65rem !important;
+            }
+
+            .brand img {
+                width: 38px !important;
+                height: 38px !important;
+                flex-shrink: 0 !important;
+            }
+
+            .brand-text {
+                min-width: 0 !important;
+            }
+
+            .brand-title {
+                max-width: 42vw !important;
+                overflow: hidden !important;
+                font-size: 0.95rem !important;
+                line-height: 1.15 !important;
+                color: #ffffff !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+
+            .brand-subtitle {
+                max-width: 42vw !important;
+                overflow: hidden !important;
+                font-size: 0.66rem !important;
+                color: #72d9ff !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+
+            .main-nav {
+                display: none !important;
+            }
+
+            .header-end {
+                gap: 0.35rem !important;
+                flex-shrink: 0 !important;
+            }
+
+            .search-toggle,
+            .theme-toggle,
+            .hamburger,
+            .profile-nav-btn {
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                min-height: 40px !important;
+                border: 1px solid rgba(255, 255, 255, 0.18) !important;
+                border-radius: 8px !important;
+                color: #ffffff !important;
+                background: rgba(255, 255, 255, 0.11) !important;
+                box-shadow: none !important;
+            }
+
+            .search-toggle:hover,
+            .theme-toggle:hover,
+            .profile-nav-btn:hover {
+                background: rgba(255, 255, 255, 0.18) !important;
+            }
+
+            .hamburger {
+                display: inline-flex !important;
+                padding: 0 !important;
+            }
+
+            .hamburger span {
+                background: #ffffff !important;
+            }
+
+            .profile-nav-btn {
+                padding: 0 !important;
+                gap: 0 !important;
+                justify-content: center !important;
+            }
+
+            .profile-nav-btn .avatar-circle-sm {
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 0.68rem !important;
+            }
+
+            .profile-nav-name,
+            .profile-nav-btn .dropdown-chevron {
+                display: none !important;
+            }
+
+            .profile-dropdown-menu {
+                position: fixed !important;
+                top: 66px !important;
+                right: 10px !important;
+                left: 10px !important;
+                width: auto !important;
+                max-width: none !important;
+                transform-origin: top right !important;
+            }
+
+            .search-form {
+                position: fixed !important;
+                top: 72px !important;
+                right: 10px !important;
+                left: 10px !important;
+                width: auto !important;
+                transform: translateY(-8px) scale(0.98) !important;
+                border-radius: 8px !important;
+                padding: 0.55rem !important;
+                z-index: 95 !important;
+            }
+
+            .search-form.open {
+                transform: translateY(0) scale(1) !important;
+            }
+
+            .mobile-overlay {
+                z-index: 110 !important;
+                background: rgba(3, 18, 31, 0.62) !important;
+            }
+
+            .mobile-drawer {
+                z-index: 120 !important;
+                width: min(88vw, 336px) !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                color: var(--ink) !important;
+                background: var(--parchment) !important;
+            }
+
+            .mobile-drawer .brand-title,
+            .mobile-drawer .drawer-profile strong,
+            .mobile-drawer .drawer-link {
+                color: var(--ink) !important;
+            }
+
+            .mobile-drawer .brand-subtitle,
+            .mobile-drawer .drawer-section-label {
+                color: var(--ink-soft) !important;
+            }
+
+            .mobile-drawer .drawer-link svg {
+                color: currentColor !important;
+                opacity: 0.82 !important;
+            }
+
+            .mobile-drawer .drawer-link:hover,
+            .mobile-drawer .drawer-link.active {
+                color: var(--navy) !important;
+                background: var(--parchment-dim) !important;
+                border-left-color: var(--accent) !important;
+            }
+
+            [data-theme="dark"] .mobile-drawer .drawer-link:hover,
+            [data-theme="dark"] .mobile-drawer .drawer-link.active {
+                color: var(--accent-ink) !important;
+            }
+
+            .drawer-header {
+                padding: 14px 14px 12px !important;
+            }
+
+            .drawer-header .brand-title {
+                max-width: 190px !important;
+                color: var(--ink) !important;
+            }
+
+            .drawer-header .brand-subtitle {
+                color: var(--ink-soft) !important;
+            }
+
+            .drawer-close {
+                border-radius: 8px !important;
+            }
+
+            .drawer-link {
+                min-height: 44px !important;
+                border-radius: 8px !important;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .site-header {
+                min-height: 60px !important;
+                padding: 9px 10px !important;
+            }
+
+            .brand img {
+                width: 34px !important;
+                height: 34px !important;
+            }
+
+            .brand-title {
+                max-width: 34vw !important;
+                font-size: 0.88rem !important;
+            }
+
+            .brand-subtitle {
+                max-width: 34vw !important;
+                font-size: 0.6rem !important;
+            }
+
+            .search-toggle,
+            .theme-toggle,
+            .hamburger,
+            .profile-nav-btn {
+                width: 38px !important;
+                height: 38px !important;
+                min-width: 38px !important;
+                min-height: 38px !important;
+            }
+
+            .search-form,
+            .profile-dropdown-menu {
+                top: 62px !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .brand-title {
+                max-width: 30vw !important;
+            }
+
+            .brand-subtitle {
+                display: none !important;
+            }
+
+            .header-end {
+                gap: 0.25rem !important;
+            }
+
+            .search-toggle,
+            .theme-toggle,
+            .hamburger,
+            .profile-nav-btn {
+                width: 36px !important;
+                height: 36px !important;
+                min-width: 36px !important;
+                min-height: 36px !important;
+            }
+        }
     </style>
 </head>
 
@@ -1650,11 +1902,15 @@
             const drawer = document.getElementById('mobile-drawer');
             const drawerClose = document.getElementById('drawer-close');
             const body = document.body;
+            const desktopNavQuery = window.matchMedia('(min-width: 981px)');
 
             function openDrawer() {
+                if (!hamburger || !overlay || !drawer) return;
+
                 drawer.classList.add('open');
                 overlay.classList.add('open');
                 hamburger.classList.add('open');
+                hamburger.setAttribute('aria-label', 'Tutup menu');
                 hamburger.setAttribute('aria-expanded', 'true');
                 drawer.setAttribute('aria-hidden', 'false');
                 overlay.setAttribute('aria-hidden', 'false');
@@ -1662,20 +1918,37 @@
             }
 
             function closeDrawer() {
+                if (!hamburger || !overlay || !drawer) return;
+
                 drawer.classList.remove('open');
                 overlay.classList.remove('open');
                 hamburger.classList.remove('open');
+                hamburger.setAttribute('aria-label', 'Buka menu');
                 hamburger.setAttribute('aria-expanded', 'false');
                 drawer.setAttribute('aria-hidden', 'true');
                 overlay.setAttribute('aria-hidden', 'true');
                 body.style.overflow = '';
             }
 
-            if (hamburger) hamburger.addEventListener('click', openDrawer);
+            function toggleDrawer() {
+                if (!drawer) return;
+
+                drawer.classList.contains('open') ? closeDrawer() : openDrawer();
+            }
+
+            if (hamburger) hamburger.addEventListener('click', toggleDrawer);
             if (overlay) overlay.addEventListener('click', closeDrawer);
             if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+            if (drawer) {
+                drawer.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', closeDrawer);
+                });
+            }
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeDrawer();
+            });
+            desktopNavQuery.addEventListener('change', function (event) {
+                if (event.matches) closeDrawer();
             });
 
             // Scroll-shadow on header
