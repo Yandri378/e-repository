@@ -292,7 +292,7 @@
         gap: .5rem;
         font-size: .72rem;
         font-weight: 800;
-        color: #72d9ff;
+        color: #0b8fe8;
         text-transform: uppercase;
         letter-spacing: .1em;
         margin-bottom: .6rem;
@@ -301,13 +301,19 @@
         display: inline-block;
         width: 18px; height: 2px;
         border-radius: 2px;
+        background: linear-gradient(90deg,#0b8fe8,transparent);
+    }
+    [data-theme="dark"] .home-eyebrow {
+        color: #72d9ff;
+    }
+    [data-theme="dark"] .home-eyebrow span {
         background: linear-gradient(90deg,#72d9ff,transparent);
     }
     .home-section-heading h2 {
         margin: 0;
         font-size: clamp(1.8rem,4vw,3rem);
         line-height: 1.05;
-        color: #ffffff;
+        color: var(--ink);
     }
     .home-text-link {
         display: inline-flex;
@@ -315,10 +321,13 @@
         gap: .4rem;
         font-size: .85rem;
         font-weight: 700;
-        color: #72d9ff;
+        color: #0b8fe8;
         white-space: nowrap;
         transition: gap .2s ease, opacity .2s ease;
         flex-shrink: 0;
+    }
+    [data-theme="dark"] .home-text-link {
+        color: #72d9ff;
     }
     .home-text-link:hover { gap: .7rem; opacity: .85; }
 
@@ -578,12 +587,12 @@
     }
     .flow-split-text h2 {
         font-size: clamp(1.8rem,4vw,3rem);
-        color: #ffffff;
+        color: var(--ink);
         line-height: 1.1;
         margin: 0 0 1rem;
     }
     .flow-split-text p {
-        color: #9dc8e0;
+        color: var(--ink-soft);
         font-size: .95rem;
         line-height: 1.7;
         margin: 0;
@@ -675,8 +684,8 @@
         grid-column: 1 / -1;
         padding: 2.5rem;
         text-align: center;
-        color: #7ab5d0;
-        border: 1px dashed rgba(114,217,255,.2);
+        color: var(--ink-soft);
+        border: 1px dashed var(--line);
         border-radius: 16px;
         font-weight: 600;
     }
@@ -686,7 +695,7 @@
         width: min(1200px, calc(100% - 2rem));
         margin: 0 auto;
         height: 1px;
-        background: linear-gradient(90deg,transparent,rgba(114,217,255,.18),transparent);
+        background: linear-gradient(90deg,transparent,var(--line),transparent);
     }
 
     /* ── Responsive ───────────────────────────────────────────── */
