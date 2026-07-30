@@ -60,12 +60,30 @@ class RepositoryController extends Controller
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
             'file_dokumen' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
             'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:51200'],
+            // PDF completeness declaration (required for mahasiswa skripsi/magang if file is uploaded)
+            'pdf_kelengkapan_deklarasi' => ['nullable', 'boolean'],
         ]);
 
         if ($request->hasFile('file_dokumen')) {
-            $data['file_dokumen'] = $request->file('file_dokumen')->store('repository-documents', 'local');
+            $uploadedPdf = $request->file('file_dokumen');
+            $data['file_dokumen'] = $uploadedPdf->store('repository-documents', 'local');
             $data['jenis_input'] = 'upload';
             $data['status'] = 'pending';
+
+            // Save PDF page count (best-effort binary scan server-side)
+            $data['pdf_page_count'] = $this->countPdfPages($uploadedPdf->getRealPath());
+
+            // Save declaration flag from mahasiswa
+            if (Auth::user()->role === 'mahasiswa' && in_array($kategori, ['skripsi', 'magang'], true)) {
+                $data['pdf_kelengkapan_deklarasi'] = $request->boolean('pdf_kelengkapan_deklarasi');
+
+                // Server-side guard: reject if mahasiswa didn't declare completeness
+                if (! $data['pdf_kelengkapan_deklarasi']) {
+                    throw ValidationException::withMessages([
+                        'pdf_kelengkapan_deklarasi' => 'Anda wajib mencentang pernyataan kelengkapan PDF (halaman pengesahan, persetujuan, dan orisinalitas).',
+                    ]);
+                }
+            }
         } elseif (($data['jenis_input'] ?? null) === 'arsip') {
             if (Auth::user()->role !== 'admin') {
                 throw ValidationException::withMessages([
@@ -318,6 +336,27 @@ class RepositoryController extends Controller
         return Str::slug('project-'.$document->kategori.'-'.$document->judul).'.'.$extension;
     }
 
+    /**
+     * Count pages in a PDF file by scanning binary content for /Type /Page markers.
+     * This is a best-effort detection; does not require external PDF libraries.
+     */
+    private function countPdfPages(string $filePath): ?int
+    {
+        if (! file_exists($filePath)) {
+            return null;
+        }
+
+        // Read first 200KB — enough to find page count in most PDFs
+        $handle = fopen($filePath, 'rb');
+        $chunk  = fread($handle, 204800);
+        fclose($handle);
+
+        // Match /Type /Page (not /Pages) patterns
+        preg_match_all('/\/Type\s*\/Page[^s]/', $chunk, $matches);
+
+        return count($matches[0]) ?: null;
+    }
+
     private function adminWhatsappUrl(RepositoryDocument $document): string
     {
         $identity = $document->nim ?: $document->nidn ?: '-';
@@ -347,6 +386,18 @@ class RepositoryController extends Controller
         $hasValidToken = $request->filled('token') && $document->submission_token && hash_equals($document->submission_token, $request->query('token'));
 
         abort_if(! $isOwner && ! $isAdmin && ! $hasValidToken, 403, 'Anda tidak memiliki akses untuk mengunduh kartu bebas pustaka ini.');
+
+        // Prerequisite check (admin can bypass for inspection purposes)
+        if (! $isAdmin) {
+            $blockers = $document->bebasPustakaBlockers();
+            if (! empty($blockers)) {
+                return redirect()
+                    ->route('mahasiswa.dashboard')
+                    ->withErrors(['bebas_pustaka' => 'Kartu Bebas Pustaka belum dapat diunduh. Syarat yang belum terpenuhi: ' . implode(' | ', $blockers)])
+                    ->with('bebas_pustaka_blockers', $blockers);
+            }
+        }
+
 
         // Generate PDF using FPDF
         $pdf = new \FPDF('P', 'mm', 'A4');

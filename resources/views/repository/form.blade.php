@@ -118,6 +118,40 @@
                 </label>
             @endif
         </div>
+
+        {{-- PDF Completeness Declaration (required for skripsi/magang) --}}
+        @if (in_array($kategori, ['skripsi', 'magang'], true) && ($currentUser?->role === 'mahasiswa' || ($isPublic && ($actor ?? null) === 'mahasiswa')))
+            <div class="pdf-declaration-box" id="pdf-declaration-section" style="display:none">
+                <div class="pdf-declaration-header">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                    <strong>Deklarasi Kelengkapan PDF Skripsi</strong>
+                </div>
+                <p class="pdf-declaration-desc">Pastikan file PDF yang Anda upload sudah dilengkapi dengan scan halaman-halaman berikut (disertai tanda tangan):</p>
+                <ul class="pdf-declaration-list">
+                    <li>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span><strong>Halaman Pengesahan</strong> — harus ada tanda tangan dosen dan pejabat kampus</span>
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span><strong>Halaman Persetujuan</strong> — harus ada tanda tangan dosen pembimbing</span>
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span><strong>Pernyataan Orisinalitas</strong> — harus ada tanda tangan mahasiswa</span>
+                    </li>
+                </ul>
+                <label class="pdf-declaration-checkbox">
+                    <input type="checkbox" name="pdf_kelengkapan_deklarasi" value="1" id="pdf_kelengkapan_deklarasi" required>
+                    <span>Saya menyatakan bahwa file PDF yang saya upload telah memuat scan <strong>halaman pengesahan, halaman persetujuan, dan pernyataan orisinalitas</strong> yang disertai tanda tangan yang sah. Jika halaman tersebut tidak ada atau tidak ada tanda tangan, proses bebas pustaka dapat ditolak.</span>
+                </label>
+                <div class="pdf-signature-warning" id="pdf-sig-warning" style="display:none">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>Perhatian: file PDF yang Anda pilih terdeteksi memiliki jumlah halaman yang sedikit. Pastikan scan halaman pengesahan, persetujuan, dan orisinalitas sudah tergabung dalam satu file PDF.</span>
+                </div>
+            </div>
+        @endif
+
         <button type="submit" class="btn primary full">Simpan Data</button>
     </form>
 </section>
@@ -166,7 +200,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const optName = (options[i].getAttribute('data-name') || '').trim().toLowerCase();
             const optNidn = (options[i].getAttribute('data-nidn') || '').trim().toLowerCase();
 
-            // Match if input is equal to full value (name + NIDN), just the name, or just the NIDN
             if (optVal === val || optName === val || optNidn === val) {
                 return {
                     id: options[i].getAttribute('data-id'),
@@ -192,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
         dosenSearch.addEventListener('change', function () {
             const match = findDosen(this.value);
             if (match) {
-                this.value = match.fullText; // Auto-complete to the full format
+                this.value = match.fullText;
                 dosenHidden.value = match.id;
                 this.setCustomValidity('');
             } else if (this.value.trim() !== '') {
@@ -209,15 +242,81 @@ document.addEventListener('DOMContentLoaded', function () {
         errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // 3. Form Submit Handler & Loading Indicator
+    // 3. PDF File: Show Declaration Section & Detect Page Count
+    const pdfInput = document.querySelector('input[name="file_dokumen"]');
+    const declarationSection = document.getElementById('pdf-declaration-section');
+    const sigWarning = document.getElementById('pdf-sig-warning');
+    const dekCheckbox = document.getElementById('pdf_kelengkapan_deklarasi');
+
+    /**
+     * Count PDF pages by scanning for /Type /Page in binary content.
+     * This is a best-effort client-side count; the actual count is validated server-side.
+     */
+    function countPdfPages(arrayBuffer) {
+        const bytes = new Uint8Array(arrayBuffer);
+        let text = '';
+        // Read only first 64KB to keep it fast
+        const limit = Math.min(bytes.length, 65536);
+        for (let i = 0; i < limit; i++) {
+            text += String.fromCharCode(bytes[i]);
+        }
+        // Match /Type /Page occurrences (not /Pages which is the catalog)
+        const matches = text.match(/\/Type\s*\/Page[^s]/g);
+        return matches ? matches.length : 0;
+    }
+
+    if (pdfInput && declarationSection) {
+        pdfInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file || file.type !== 'application/pdf') {
+                declarationSection.style.display = 'none';
+                return;
+            }
+
+            // Show the declaration box
+            declarationSection.style.display = 'block';
+            declarationSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Reset checkbox & warning on new file selection
+            if (dekCheckbox) dekCheckbox.checked = false;
+            if (sigWarning) sigWarning.style.display = 'none';
+
+            // Read first bytes for page count detection
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const pageCount = countPdfPages(e.target.result);
+                // Warn if detected pages < 5 (too few for a proper skripsi with required scanned pages)
+                if (sigWarning && pageCount > 0 && pageCount < 5) {
+                    sigWarning.style.display = 'flex';
+                } else if (sigWarning) {
+                    sigWarning.style.display = 'none';
+                }
+            };
+            // Read only first 100KB for speed
+            reader.readAsArrayBuffer(file.slice(0, 102400));
+        });
+    }
+
+    // 4. Form Submit Handler & Loading Indicator
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function (e) {
             if (!form.checkValidity()) {
-                return; // Let native browser validation display alerts
+                return;
             }
 
-            // Custom validation check for Dosen Pembimbing (only if the element is required)
+            // Custom validation for declaration checkbox visibility
+            if (declarationSection && declarationSection.style.display !== 'none') {
+                if (dekCheckbox && !dekCheckbox.checked) {
+                    e.preventDefault();
+                    dekCheckbox.setCustomValidity('Anda harus mencentang pernyataan kelengkapan PDF terlebih dahulu.');
+                    dekCheckbox.reportValidity();
+                    dekCheckbox.setCustomValidity('');
+                    return;
+                }
+            }
+
+            // Custom validation for Dosen Pembimbing
             if (dosenSearch && dosenSearch.required) {
                 const match = findDosen(dosenSearch.value);
                 if (!match) {
@@ -235,13 +334,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // Show submit loading notification
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
-                // To avoid interrupting form submit, disable button using setTimeout
                 setTimeout(() => {
                     submitBtn.disabled = true;
                     submitBtn.innerText = 'Memproses & Menyimpan Data...';
                 }, 0);
 
-                // Add loading indicator container
                 if (!document.querySelector('.submit-loading-indicator')) {
                     const loader = document.createElement('div');
                     loader.className = 'submit-loading-indicator';
@@ -253,5 +350,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+
 @endsection
 

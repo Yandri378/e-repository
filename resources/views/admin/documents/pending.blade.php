@@ -48,6 +48,12 @@
                     <input type="hidden" name="catatan_verifikasi" value="Dokumen belum sesuai.">
                     <button class="btn secondary" type="submit">Tolak</button>
                 </form>
+                <form method="POST" action="{{ route('admin.documents.destroy', $document) }}"
+                    onsubmit="return confirm(@js('Hapus data dokumen '.$document->judul.' secara permanen? File PDF dan project terkait juga akan dihapus.'))">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn secondary" type="submit">Hapus</button>
+                </form>
             </div>
         </article>
     @empty

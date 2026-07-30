@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
+use App\Imports\RepositoryDocumentImport;
 use App\Models\RepositoryDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -198,6 +200,31 @@ class AdminDocumentController extends Controller
         return Storage::disk('public')->download($document->file_dokumen);
     }
 
+    public function destroy(RepositoryDocument $document)
+    {
+        $title = $document->judul;
+
+        foreach (['file_dokumen', 'file_project'] as $field) {
+            $path = $document->{$field};
+
+            if (! $path) {
+                continue;
+            }
+
+            if (Storage::disk('local')->exists($path)) {
+                Storage::disk('local')->delete($path);
+            }
+
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        $document->delete();
+
+        return back()->with('status', 'Data dokumen "'.$title.'" berhasil dihapus.');
+    }
+
     public function downloadRequests(Request $request)
     {
         $requests = \App\Models\RepositoryDownloadRequest::with('document')
@@ -244,5 +271,199 @@ class AdminDocumentController extends Controller
                         ->orWhere('tahun', 'like', "%{$search}%");
                 });
             });
+    }
+
+    /**
+     * Admin toggles bebas pustaka prerequisite fields on a specific document.
+     * Fields: hard_copy_submitted, pdf_kelengkapan_confirmed, has_active_loans
+     */
+    public function updateBebasPustakaStatus(Request $request, RepositoryDocument $document)
+    {
+        $data = $request->validate([
+            'field' => ['required', 'in:hard_copy_submitted,pdf_kelengkapan_confirmed,has_active_loans'],
+            'value' => ['required', 'boolean'],
+        ]);
+
+        $document->update([$data['field'] => $data['value']]);
+
+        $labels = [
+            'hard_copy_submitted'      => 'Status hard copy',
+            'pdf_kelengkapan_confirmed' => 'Konfirmasi kelengkapan PDF',
+            'has_active_loans'         => 'Status pinjaman buku',
+        ];
+
+        $statusText = $data['value'] ? 'diaktifkan' : 'dinonaktifkan';
+
+        return back()->with('status', ($labels[$data['field']] ?? $data['field']).' berhasil '.$statusText.' untuk dokumen "'.$document->judul.'".');
+    }
+
+    /**
+     * Admin explicitly approves the download of Kartu Bebas Pustaka for a specific document.
+     * All other prerequisites must already be met before this can be granted.
+     */
+    public function approveBebasPustaka(RepositoryDocument $document)
+    {
+        // Ensure all other checklist items are done (except the approval itself)
+        $requiredMet = ! $document->has_active_loans
+            && $document->dosen_approved_at
+            && $document->pdf_kelengkapan_deklarasi
+            && $document->pdf_kelengkapan_confirmed
+            && $document->hard_copy_submitted;
+
+        if (! $requiredMet) {
+            return back()->withErrors([
+                'bebas_pustaka' => 'Tidak dapat memberikan izin: masih ada syarat bebas pustaka yang belum terpenuhi. Pastikan: tidak ada pinjaman buku, sudah ACC dosen, PDF sudah dikonfirmasi lengkap, dan hard copy sudah diserahkan.',
+            ]);
+        }
+
+        $document->update([
+            'bebas_pustaka_diizinkan'    => true,
+            'bebas_pustaka_diizinkan_by' => Auth::id(),
+            'bebas_pustaka_diizinkan_at' => now(),
+        ]);
+
+        return back()->with('status', 'Izin download Kartu Bebas Pustaka berhasil diberikan untuk "'.$document->judul.'".');
+    }
+
+    /**
+     * Admin revokes the bebas pustaka download permission.
+     */
+    public function revokeBebasPustaka(RepositoryDocument $document)
+    {
+        $document->update([
+            'bebas_pustaka_diizinkan'    => false,
+            'bebas_pustaka_diizinkan_by' => null,
+            'bebas_pustaka_diizinkan_at' => null,
+        ]);
+
+        return back()->with('status', 'Izin download Kartu Bebas Pustaka berhasil dicabut untuk "'.$document->judul.'".');
+    }
+
+    /* ─────────────────────────────────────────
+     |  IMPORT EXCEL
+     ───────────────────────────────────────── */
+
+    /** Kolom header Excel per kategori */
+    private function templateHeaders(string $kategori): array
+    {
+        $shared = ['Nama', 'Email', 'Judul', 'Tahun', 'Abstrak', 'Program Studi'];
+
+        return match ($kategori) {
+            'skripsi' => array_merge(['NIM'], $shared, ['Dosen Pembimbing']),
+            'magang'  => array_merge(['NIM'], $shared, ['Tempat Magang', 'Dosen Pembimbing']),
+            'pkm'     => array_merge(['NIDN'], $shared, ['Detail']),
+            default   => array_merge(['NIDN'], $shared, ['Detail']), // penelitian
+        };
+    }
+
+    /**
+     * Tampilkan halaman form import Excel.
+     */
+    public function showImport(Request $request)
+    {
+        $kategori = $request->query('kategori', 'skripsi');
+        $validKategori = ['skripsi', 'magang', 'pkm', 'penelitian'];
+        if (! in_array($kategori, $validKategori, true)) {
+            $kategori = 'skripsi';
+        }
+
+        $headers = $this->templateHeaders($kategori);
+
+        return view('admin.documents.import', compact('kategori', 'headers', 'validKategori'));
+    }
+
+    /**
+     * Proses file Excel/CSV yang diupload — tanpa library pihak ketiga.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'kategori' => ['required', 'in:skripsi,magang,pkm,penelitian'],
+            'file'     => ['required', 'file', 'mimes:xlsx,csv', 'max:10240'],
+        ], [
+            'file.required' => 'File wajib dipilih.',
+            'file.mimes'    => 'File harus berformat .xlsx atau .csv.',
+            'file.max'      => 'Ukuran file maksimal 10 MB.',
+        ]);
+
+        $kategori  = $request->kategori;
+        $uploaded  = $request->file('file');
+        $extension = strtolower($uploaded->getClientOriginalExtension());
+        $filePath  = $uploaded->getRealPath();
+
+        $importer = new RepositoryDocumentImport($kategori, $uploaded->getClientOriginalName());
+
+        try {
+            $importer->importFromFile($filePath, $extension);
+        } catch (\Throwable $e) {
+            return back()
+                ->withInput()
+                ->with('import_error', 'Gagal memproses file: ' . $e->getMessage());
+        }
+
+        return back()->with([
+            'import_success'  => $importer->successCount,
+            'import_errors'   => $importer->errorRows,
+            'import_kategori' => $kategori,
+        ]);
+    }
+
+    /**
+     * Download template CSV sesuai kategori (tidak butuh library pihak ketiga).
+     * File CSV bisa langsung dibuka di Excel, Google Sheets, LibreOffice, dll.
+     */
+    public function downloadTemplate(string $kategori)
+    {
+        $validKategori = ['skripsi', 'magang', 'pkm', 'penelitian'];
+        abort_if(! in_array($kategori, $validKategori, true), 404);
+
+        $headers  = $this->templateHeaders($kategori);
+        $filename = 'template_import_' . $kategori . '.csv';
+
+        $example = [];
+        switch ($kategori) {
+            case 'skripsi':
+                $example = [
+                    '12345678', 'Budi Santoso', 'budi@example.com',
+                    'Judul Skripsi Contoh', date('Y'), 'Abstrak singkat tentang penelitian ini.',
+                    'Teknik Informatika', 'Dr. Ahmad Fauzi',
+                ];
+                break;
+            case 'magang':
+                $example = [
+                    '12345678', 'Siti Rahayu', 'siti@example.com',
+                    'Laporan Magang di Perusahaan X', date('Y'), 'Abstrak singkat laporan magang.',
+                    'Sistem Informasi', 'PT. Karya Abadi', 'Dr. Budi Santoso',
+                ];
+                break;
+            case 'pkm':
+                $example = [
+                    '0123456789', 'Dr. Ahmad Fauzi', 'ahmad@kampus.ac.id',
+                    'Judul PKM Contoh', date('Y'), 'Abstrak PKM singkat.',
+                    'Teknik Informatika', 'Detail tambahan tentang PKM ini.',
+                ];
+                break;
+            default: // penelitian
+                $example = [
+                    '0123456789', 'Prof. Dr. Sari Dewi', 'sari@kampus.ac.id',
+                    'Judul Penelitian Contoh', date('Y'), 'Abstrak penelitian dosen.',
+                    'Matematika', 'Detail tambahan penelitian.',
+                ];
+                break;
+        }
+
+        $example = array_slice(array_pad($example, count($headers), ''), 0, count($headers));
+
+        return response()->streamDownload(function () use ($headers, $example) {
+            // BOM UTF-8 agar Excel membaca karakter Indonesia dengan benar
+            echo "\xEF\xBB\xBF";
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $headers, ',', '"');
+            fputcsv($handle, $example, ',', '"');
+            fclose($handle);
+        }, $filename, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 }

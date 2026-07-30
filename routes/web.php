@@ -129,8 +129,15 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::middleware('role:admin')->prefix('admin/uploads')->name('admin.documents.')->group(function () {
         Route::get('/verifikasi', [AdminDocumentController::class, 'pending'])->name('pending');
         Route::get('/', [AdminDocumentController::class, 'index'])->name('index');
+        Route::get('/import', [AdminDocumentController::class, 'showImport'])->name('import');
+        Route::post('/import', [AdminDocumentController::class, 'import'])->name('import.store');
+        Route::get('/import/template/{kategori}', [AdminDocumentController::class, 'downloadTemplate'])->name('import.template');
         Route::get('/{document}/download', [AdminDocumentController::class, 'download'])->name('download');
         Route::patch('/{document}/status', [AdminDocumentController::class, 'updateStatus'])->name('status');
+        Route::patch('/{document}/bebas-pustaka', [AdminDocumentController::class, 'updateBebasPustakaStatus'])->name('bebas-pustaka');
+        Route::post('/{document}/bebas-pustaka/approve', [AdminDocumentController::class, 'approveBebasPustaka'])->name('bebas-pustaka.approve');
+        Route::post('/{document}/bebas-pustaka/revoke', [AdminDocumentController::class, 'revokeBebasPustaka'])->name('bebas-pustaka.revoke');
+        Route::delete('/{document}', [AdminDocumentController::class, 'destroy'])->name('destroy');
     });
 
     // Admin download requests

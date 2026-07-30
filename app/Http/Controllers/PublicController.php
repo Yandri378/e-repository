@@ -37,11 +37,15 @@ class PublicController extends Controller
                     $subQuery->where('judul', 'like', "%{$search}%")
                         ->orWhere('nama', 'like', "%{$search}%")
                         ->orWhere('nim', 'like', "%{$search}%")
-                        ->orWhere('nidn', 'like', "%{$search}%");
+                        ->orWhere('nidn', 'like', "%{$search}%")
+                        ->orWhere('abstrak', 'like', "%{$search}%")
+                        ->orWhere('detail', 'like', "%{$search}%")
+                        ->orWhere('tempat_magang', 'like', "%{$search}%")
+                        ->orWhere('tahun', 'like', "%{$search}%");
                 });
             })
             ->latest()
-            ->paginate(10)
+            ->paginate(12)
             ->withQueryString();
 
         return view('pages.repository', compact('documents', 'kategori'));
