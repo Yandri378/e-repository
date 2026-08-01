@@ -38,11 +38,6 @@
             <label>Nama
                 <input type="text" name="nama" value="{{ old('nama', $isAdminManualSkripsi ? '' : $currentUser?->name) }}" required>
             </label>
-            @unless($isAdminManualSkripsi)
-                <label>Email
-                    <input type="email" name="email" value="{{ old('email', $currentUser?->email) }}" @required($isPublic)>
-                </label>
-            @endunless
             <label>{{ $identityLabel }}
                 <input type="text" name="{{ $identityName }}" value="{{ old($identityName, $identityName === 'nim' ? $currentUser?->nim : $currentUser?->nidn) }}" @required($isPublic)>
             </label>
@@ -87,11 +82,6 @@
             <label>Tahun
                 <input type="number" name="tahun" value="{{ old('tahun', date('Y')) }}" required>
             </label>
-            @unless($isAdminManualSkripsi)
-                <label>Bulan
-                    <input type="number" name="bulan" min="1" max="12" value="{{ old('bulan', date('n')) }}">
-                </label>
-            @endunless
             <label>Judul
                 <input type="text" name="judul" value="{{ old('judul') }}" required>
             </label>
@@ -112,9 +102,6 @@
             </label>
             <label class="full-field">Abstrak
                 <textarea name="abstrak" rows="5">{{ old('abstrak') }}</textarea>
-            </label>
-            <label class="full-field">Detail
-                <textarea name="detail" rows="4" placeholder="Isi detail tambahan, catatan pustaka, atau keterangan dokumen.">{{ old('detail') }}</textarea>
             </label>
             <label class="full-field">Upload Dokumen PDF
                 <input type="file" name="file_dokumen" accept="application/pdf" @required($isPublic || (auth()->user()?->role !== 'admin'))>

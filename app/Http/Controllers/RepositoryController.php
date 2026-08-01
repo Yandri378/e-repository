@@ -37,12 +37,15 @@ class RepositoryController extends Controller
     public function store(Request $request, string $kategori)
     {
         $this->authorizeCategory($kategori);
+        $user = $request->user();
+
+        abort_if(! $user, 403);
 
         $data = $request->validate([
             'program_studi_id' => ['nullable', 'exists:program_studi,id'],
             'jenis_dokumen_id' => ['nullable', 'exists:jenis_dokumen,id'],
             'dosen_pembimbing_id' => [
-                Auth::user()->role === 'mahasiswa' && in_array($kategori, ['skripsi', 'magang'], true) ? 'required' : 'nullable',
+                $user->role === 'mahasiswa' && in_array($kategori, ['skripsi', 'magang'], true) ? 'required' : 'nullable',
                 Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'dosen')->where('status_akun', 'aktif')),
             ],
             'jenis_input' => ['nullable', 'in:arsip,upload'],
@@ -74,7 +77,7 @@ class RepositoryController extends Controller
             $data['pdf_page_count'] = $this->countPdfPages($uploadedPdf->getRealPath());
 
             // Save declaration flag from mahasiswa
-            if (Auth::user()->role === 'mahasiswa' && in_array($kategori, ['skripsi', 'magang'], true)) {
+            if ($user->role === 'mahasiswa' && in_array($kategori, ['skripsi', 'magang'], true)) {
                 $data['pdf_kelengkapan_deklarasi'] = $request->boolean('pdf_kelengkapan_deklarasi');
 
                 // Server-side guard: reject if mahasiswa didn't declare completeness
@@ -85,7 +88,7 @@ class RepositoryController extends Controller
                 }
             }
         } elseif (($data['jenis_input'] ?? null) === 'arsip') {
-            if (Auth::user()->role !== 'admin') {
+            if ($user->role !== 'admin') {
                 throw ValidationException::withMessages([
                     'file_dokumen' => 'Mahasiswa dan dosen wajib upload dokumen PDF.',
                 ]);
@@ -109,57 +112,65 @@ class RepositoryController extends Controller
             'bulan' => $data['bulan'] ?? now()->month,
             'tanggal_upload' => now(),
             'status' => $data['status'] ?? 'pending',
-            'submission_token' => Auth::user()->role === 'admin' ? Str::random(48) : null,
+            'submission_token' => $user->role === 'admin' ? Str::random(48) : null,
         ]));
 
-        if (Auth::user()->role === 'admin') {
+        if ($user->role === 'admin') {
             return redirect()
                 ->route('public.upload.detail', [$document, $document->submission_token])
                 ->with('status', 'Data berhasil disimpan. Silakan cek preview data di halaman ini.');
         }
 
-        if (Auth::user()->role !== 'admin' && $document->jenis_input === 'upload') {
-            $message = Auth::user()->role === 'mahasiswa'
+        if ($document->jenis_input === 'upload') {
+            $message = $user->role === 'mahasiswa'
                 ? 'Data berhasil disimpan. Dokumen menunggu ACC dosen pembimbing, lalu akan diverifikasi admin.'
                 : 'Data berhasil disimpan. Silakan kirim pemberitahuan WhatsApp ke admin untuk verifikasi.';
 
             return redirect()
-                ->route(Auth::user()->role.'.dashboard')
+                ->route($user->role.'.dashboard')
                 ->with('status', $message)
                 ->with('whatsapp_notification_url', $this->adminWhatsappUrl($document));
         }
 
         return redirect()
-            ->route(Auth::user()->role.'.dashboard')
+            ->route($user->role.'.dashboard')
             ->with('status', 'Data berhasil disimpan.');
     }
 
     public function download(RepositoryDocument $document)
     {
         abort_if(! $this->canDownloadDocument($document), 403, 'Anda tidak memiliki akses untuk mengunduh dokumen ini.');
-        abort_if(! $document->file_dokumen, 404, 'File dokumen belum tersedia.');
-
-        if (Storage::disk('local')->exists($document->file_dokumen)) {
-            return Storage::disk('local')->download($document->file_dokumen, $this->downloadFilename($document));
+        if (! $document->file_dokumen) {
+            abort(404, 'File dokumen belum tersedia.');
         }
 
-        abort_if(! Storage::disk('public')->exists($document->file_dokumen), 404, 'File dokumen tidak ditemukan.');
+        $filePath = $document->file_dokumen;
 
-        return Storage::disk('public')->download($document->file_dokumen, $this->downloadFilename($document));
+        if (Storage::disk('local')->exists($filePath)) {
+            return Storage::disk('local')->download($filePath, $this->downloadFilename($document));
+        }
+
+        abort_if(! Storage::disk('public')->exists($filePath), 404, 'File dokumen tidak ditemukan.');
+
+        return Storage::disk('public')->download($filePath, $this->downloadFilename($document));
     }
 
     public function downloadProject(RepositoryDocument $document)
     {
         abort_if(! $this->canDownloadDocument($document), 403, 'Anda tidak memiliki akses untuk mengunduh file project ini.');
-        abort_if(! $document->file_project, 404, 'File project belum tersedia.');
-
-        if (Storage::disk('local')->exists($document->file_project)) {
-            return Storage::disk('local')->download($document->file_project, $this->projectFilename($document));
+        if (! $document->file_project) {
+            abort(404, 'File project belum tersedia.');
         }
 
-        abort_if(! Storage::disk('public')->exists($document->file_project), 404, 'File project tidak ditemukan.');
+        $filePath = $document->file_project;
 
-        return Storage::disk('public')->download($document->file_project, $this->projectFilename($document));
+        if (Storage::disk('local')->exists($filePath)) {
+            return Storage::disk('local')->download($filePath, $this->projectFilename($document));
+        }
+
+        abort_if(! Storage::disk('public')->exists($filePath), 404, 'File project tidak ditemukan.');
+
+        return Storage::disk('public')->download($filePath, $this->projectFilename($document));
     }
 
     public function publicCreate(string $actor, string $kategori)
@@ -205,7 +216,7 @@ class RepositoryController extends Controller
             'nim' => [$identityField === 'nim' ? 'required' : 'nullable', $identityField === 'nim' ? 'regex:/^\d{6,15}$/' : 'nullable'],
             'nidn' => [$identityField === 'nidn' ? 'required' : 'nullable', $identityField === 'nidn' ? 'regex:/^\d{8,18}$/' : 'nullable'],
             'nama' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
             'tahun' => ['required', 'digits:4'],
             'bulan' => ['nullable', 'integer', 'between:1,12'],
             'judul' => ['required', 'string', 'max:255'],
@@ -259,7 +270,7 @@ class RepositoryController extends Controller
         // ensure the token matches the document (owner submitting request)
         abort_if(! $document->submission_token || ! hash_equals($document->submission_token, $data['submission_token']), 403, 'Token submission tidak valid.');
 
-        $req = \App\Models\RepositoryDownloadRequest::create([
+        \App\Models\RepositoryDownloadRequest::create([
             'repository_document_id' => $document->id,
             'submission_token' => $data['submission_token'],
             'requester_email' => $data['requester_email'],
@@ -294,7 +305,11 @@ class RepositoryController extends Controller
     {
         abort_if(! in_array($kategori, ['skripsi', 'magang', 'pkm', 'penelitian'], true), 404);
 
-        $role = Auth::user()->role;
+        $user = Auth::user();
+
+        abort_if(! $user, 403);
+
+        $role = $user->role;
         $allowed = match ($role) {
             'admin' => ['skripsi', 'magang', 'pkm', 'penelitian'],
             'mahasiswa' => ['skripsi', 'magang'],
@@ -338,7 +353,7 @@ class RepositoryController extends Controller
 
     private function projectFilename(RepositoryDocument $document): string
     {
-        $extension = pathinfo($document->file_project, PATHINFO_EXTENSION) ?: 'zip';
+        $extension = pathinfo($document->file_project ?? '', PATHINFO_EXTENSION) ?: 'zip';
 
         return Str::slug('project-'.$document->kategori.'-'.$document->judul).'.'.$extension;
     }
@@ -355,8 +370,16 @@ class RepositoryController extends Controller
 
         // Read first 200KB — enough to find page count in most PDFs
         $handle = fopen($filePath, 'rb');
-        $chunk  = fread($handle, 204800);
+        if (! $handle) {
+            return null;
+        }
+
+        $chunk = fread($handle, 204800);
         fclose($handle);
+
+        if ($chunk === false) {
+            return null;
+        }
 
         // Match /Type /Page (not /Pages) patterns
         preg_match_all('/\/Type\s*\/Page[^s]/', $chunk, $matches);
@@ -388,8 +411,9 @@ class RepositoryController extends Controller
     public function downloadBebasPustaka(Request $request, RepositoryDocument $document)
     {
         // Authorization check
-        $isOwner = auth()->check() && auth()->id() === $document->user_id;
-        $isAdmin = auth()->check() && auth()->user()->role === 'admin';
+        $user = $request->user();
+        $isOwner = $user && $user->id === $document->user_id;
+        $isAdmin = $user && $user->role === 'admin';
         $hasValidToken = $request->filled('token') && $document->submission_token && hash_equals($document->submission_token, $request->query('token'));
 
         abort_if(! $isOwner && ! $isAdmin && ! $hasValidToken, 403, 'Anda tidak memiliki akses untuk mengunduh kartu bebas pustaka ini.');
@@ -468,7 +492,7 @@ class RepositoryController extends Controller
 
         $pdf->Cell($leftCol, 6, 'Kategori Dokumen', 0, 0);
         $pdf->Cell($midCol, 6, ':', 0, 0);
-        $pdf->Cell(0, 6, strtoupper($document->kategori), 0, 1);
+        $pdf->Cell(0, 6, strtoupper($document->kategori ?? ''), 0, 1);
 
         $pdf->Cell($leftCol, 6, 'Judul Dokumen', 0, 0);
         $pdf->Cell($midCol, 6, ':', 0, 0);
@@ -496,7 +520,7 @@ class RepositoryController extends Controller
         $pdf->SetX(20);
         $pdf->Cell(8, 6, '2.', 0, 0);
         $pdf->SetX(28);
-        $pdf->MultiCell(0, 6, 'Menyerahkan ' . strtolower($document->kategori) . ' dalam bentuk hard copy dan soft copy ke perpustakaan (khusus untuk soft copynya) dokumen ' . strtoupper($document->kategori) . ' yang telah diunggah ke sistem repository.', 0, 'L');
+        $pdf->MultiCell(0, 6, 'Menyerahkan ' . strtolower($document->kategori ?? '') . ' dalam bentuk hard copy dan soft copy ke perpustakaan (khusus untuk soft copynya) dokumen ' . strtoupper($document->kategori ?? '') . ' yang telah diunggah ke sistem repository.', 0, 'L');
 
         // Closing
         $pdf->Ln(6);

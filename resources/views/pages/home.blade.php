@@ -813,7 +813,7 @@
         </p>
 
         <h1 class="hero-title">
-            <span>Sistem Repository</span>
+            <span> Repository</span>
             <span>Universitas Metamedia</span>
         </h1>
 
