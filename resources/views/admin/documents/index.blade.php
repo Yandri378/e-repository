@@ -70,8 +70,53 @@
             </div>
         @endif
 
+        {{-- ============ FILTER TABS ============ --}}
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white p-2.5 shadow-sm shadow-blue-900/5 sm:mt-8 sm:p-3">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                {{-- Button 1: Belum Terverifikasi (Pending) --}}
+                <a href="{{ route('admin.documents.index', ['status' => 'pending']) }}"
+                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all duration-200 sm:text-sm {{ $status === 'pending' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600' : 'bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-700 ring-1 ring-slate-200/80' }}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Belum Terverifikasi</span>
+                    <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold {{ $status === 'pending' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800' }}">
+                        {{ $pendingCount }}
+                    </span>
+                </a>
+
+                {{-- Button 2: Data Terverifikasi --}}
+                <a href="{{ route('admin.documents.index', ['status' => 'terverifikasi']) }}"
+                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all duration-200 sm:text-sm {{ $status === 'terverifikasi' ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-md shadow-emerald-600/25 ring-2 ring-emerald-600' : 'bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 ring-1 ring-slate-200/80' }}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Data Terverifikasi</span>
+                    <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold {{ $status === 'terverifikasi' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800' }}">
+                        {{ $verifiedCount }}
+                    </span>
+                </a>
+
+                {{-- Button 3: Ditolak --}}
+                <a href="{{ route('admin.documents.index', ['status' => 'ditolak']) }}"
+                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all duration-200 sm:text-sm {{ $status === 'ditolak' ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600' : 'bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-700 ring-1 ring-slate-200/80' }}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    <span>Ditolak</span>
+                    <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold {{ $status === 'ditolak' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-800' }}">
+                        {{ $rejectedCount }}
+                    </span>
+                </a>
+
+                {{-- Button 4: Semua Data --}}
+                <a href="{{ route('admin.documents.index', ['status' => 'all']) }}"
+                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all duration-200 sm:text-sm {{ $status === 'all' ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-md shadow-slate-800/25 ring-2 ring-slate-700' : 'bg-slate-50 text-slate-600 hover:bg-slate-200 ring-1 ring-slate-200/80' }}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    <span>Semua Data</span>
+                    <span class="rounded-full px-2 py-0.5 text-[11px] font-extrabold {{ $status === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-800' }}">
+                        {{ $allCount }}
+                    </span>
+                </a>
+            </div>
+        </div>
+
         {{-- ============ LIST ============ --}}
-        <section class="mt-6 space-y-5 sm:mt-8 sm:space-y-6">
+        <section class="mt-4 space-y-5 sm:mt-6 sm:space-y-6">
             @forelse ($documents as $document)
                 @php
                     $statusStyle = [
@@ -305,7 +350,17 @@
             @empty
                 <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200 bg-blue-50/40 px-6 py-16 text-center">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-3 text-blue-300"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    <p class="text-sm font-medium text-slate-500">Belum ada dokumen repository.</p>
+                    <p class="text-sm font-medium text-slate-500">
+                        @if ($status === 'pending')
+                            Tidak ada upload dokumen yang menunggu verifikasi.
+                        @elseif ($status === 'terverifikasi')
+                            Belum ada dokumen yang terverifikasi.
+                        @elseif ($status === 'ditolak')
+                            Belum ada dokumen yang ditolak.
+                        @else
+                            Belum ada dokumen repository.
+                        @endif
+                    </p>
                 </div>
             @endforelse
 

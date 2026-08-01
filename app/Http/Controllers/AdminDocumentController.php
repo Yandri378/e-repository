@@ -22,15 +22,41 @@ class AdminDocumentController extends Controller
         return view('admin.documents.pending', compact('documents'));
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $documents = RepositoryDocument::with(['owner', 'programStudi', 'jenisDokumen', 'dosenPembimbing'])
-            ->latest()
-            ->paginate(12);
+        $status = $request->query('status', 'pending');
+
+        $query = RepositoryDocument::with(['owner', 'programStudi', 'jenisDokumen', 'dosenPembimbing']);
+
+        if ($status === 'terverifikasi') {
+            $query->where('status', 'terverifikasi');
+        } elseif ($status === 'ditolak') {
+            $query->where('status', 'ditolak');
+        } elseif ($status === 'all') {
+            // Tampilkan semua data tanpa filter status
+        } else {
+            // Default: hanya tampilkan dokumen yang belum diverifikasi (pending)
+            $status = 'pending';
+            $query->where('status', 'pending');
+        }
+
+        $documents = $query->latest()->paginate(12)->withQueryString();
 
         $bulkPendingCount = RepositoryDocument::where('status', 'pending')->count();
+        $pendingCount     = $bulkPendingCount;
+        $verifiedCount    = RepositoryDocument::where('status', 'terverifikasi')->count();
+        $rejectedCount    = RepositoryDocument::where('status', 'ditolak')->count();
+        $allCount         = RepositoryDocument::count();
 
-        return view('admin.documents.index', compact('documents', 'bulkPendingCount'));
+        return view('admin.documents.index', compact(
+            'documents',
+            'bulkPendingCount',
+            'status',
+            'pendingCount',
+            'verifiedCount',
+            'rejectedCount',
+            'allCount'
+        ));
     }
 
     public function mahasiswa(Request $request)

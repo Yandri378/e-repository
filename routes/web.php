@@ -85,12 +85,13 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::patch('/{document}/reject', [DosenApprovalController::class, 'reject'])->name('reject');
     });
 
-    Route::get('/laporan/{kategori?}', [ReportController::class, 'index'])
-        ->middleware('role:admin')
-        ->name('reports.index');
-    Route::get('/laporan/export/{format}', [ReportController::class, 'export'])
-        ->middleware('role:admin')
-        ->name('reports.export');
+    Route::middleware('role:admin')->prefix('laporan')->name('reports.')->group(function () {
+        Route::get('/export/{format}', [ReportController::class, 'export'])->name('export');
+        Route::post('/', [ReportController::class, 'store'])->name('store');
+        Route::patch('/{document}', [ReportController::class, 'update'])->name('update');
+        Route::delete('/{document}', [ReportController::class, 'destroy'])->name('destroy');
+        Route::get('/{kategori?}', [ReportController::class, 'index'])->name('index');
+    });
 
     Route::patch('/admin/settings/upload-session', [AdminSettingController::class, 'updateUploadSession'])
         ->middleware('role:admin')
