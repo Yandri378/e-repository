@@ -28,17 +28,35 @@
             <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
             <div class="pointer-events-none absolute -bottom-20 left-10 h-48 w-48 rounded-full bg-sky-300/20 blur-2xl"></div>
 
-            <div class="relative flex items-center gap-3 sm:gap-4">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/30 backdrop-blur-sm sm:h-14 sm:w-14 sm:rounded-2xl">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="sm:h-7 sm:w-7">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
+            <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex min-w-0 items-center gap-3 sm:gap-4">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/30 backdrop-blur-sm sm:h-14 sm:w-14 sm:rounded-2xl">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="sm:h-7 sm:w-7">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-100 sm:text-xs">Admin</p>
+                        <h1 class="mt-1 truncate text-lg font-bold text-white sm:text-2xl md:text-3xl">Kelola Semua Upload Repository</h1>
+                    </div>
                 </div>
-                <div class="min-w-0">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-100 sm:text-xs">Admin</p>
-                    <h1 class="mt-1 truncate text-lg font-bold text-white sm:text-2xl md:text-3xl">Kelola Semua Upload Repository</h1>
-                </div>
+
+                <form method="POST" action="{{ route('admin.documents.verify-all') }}"
+                    onsubmit="return confirm(@js('Verifikasi semua upload pending menjadi terverifikasi?'))">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition sm:w-auto {{ $bulkPendingCount > 0 ? 'bg-white text-blue-700 shadow-lg shadow-blue-900/20 hover:scale-[1.02] hover:bg-blue-50' : 'cursor-not-allowed bg-white/20 text-white/60 ring-1 ring-white/25' }}"
+                        {{ $bulkPendingCount > 0 ? '' : 'disabled' }}
+                        title="{{ $bulkPendingCount > 0 ? 'Verifikasi semua upload pending' : 'Tidak ada upload pending yang bisa diverifikasi' }}">
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                        Terverifikasi Semua
+                        @if ($bulkPendingCount > 0)
+                            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">{{ $bulkPendingCount }}</span>
+                        @endif
+                    </button>
+                </form>
             </div>
         </section>
 

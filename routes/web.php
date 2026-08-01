@@ -132,6 +132,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/import', [AdminDocumentController::class, 'showImport'])->name('import');
         Route::post('/import', [AdminDocumentController::class, 'import'])->name('import.store');
         Route::get('/import/template/{kategori}', [AdminDocumentController::class, 'downloadTemplate'])->name('import.template');
+        Route::patch('/verify-all', [AdminDocumentController::class, 'verifyAll'])->name('verify-all');
         Route::get('/{document}/download', [AdminDocumentController::class, 'download'])->name('download');
         Route::patch('/{document}/status', [AdminDocumentController::class, 'updateStatus'])->name('status');
         Route::patch('/{document}/bebas-pustaka', [AdminDocumentController::class, 'updateBebasPustakaStatus'])->name('bebas-pustaka');

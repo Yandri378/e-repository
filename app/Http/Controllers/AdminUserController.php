@@ -20,15 +20,32 @@ class AdminUserController extends Controller
         return view('admin.users.pending', compact('users'));
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $statusFilter = $request->query('status', 'aktif');
+        $allowedFilters = ['aktif', 'nonaktif', 'semua'];
+
+        if (! in_array($statusFilter, $allowedFilters, true)) {
+            $statusFilter = 'aktif';
+        }
+
         $users = User::with('programStudi')
             ->whereIn('role', ['mahasiswa', 'dosen'])
-            ->latest()
-            ->paginate(12);
+            ->when($statusFilter !== 'semua', fn ($query) => $query->where('status_akun', $statusFilter))
+            ->when($statusFilter === 'semua', fn ($query) => $query->whereIn('status_akun', ['aktif', 'nonaktif']))
+            ->orderBy('name')
+            ->paginate(12)
+            ->withQueryString();
+
+        $userStatusCounts = User::whereIn('role', ['mahasiswa', 'dosen'])
+            ->whereIn('status_akun', ['aktif', 'nonaktif'])
+            ->selectRaw('status_akun, count(*) as total')
+            ->groupBy('status_akun')
+            ->pluck('total', 'status_akun');
+
         $programStudi = ProgramStudi::where('aktif', true)->orderBy('nama')->get();
 
-        return view('admin.users.index', compact('users', 'programStudi'));
+        return view('admin.users.index', compact('users', 'programStudi', 'statusFilter', 'userStatusCounts'));
     }
 
     public function store(Request $request)

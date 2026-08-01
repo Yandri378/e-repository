@@ -126,10 +126,27 @@
         }
 
         .brand img {
-            width: 40px;
-            height: 40px;
+            width: 56px;
+            height: 56px;
             object-fit: contain;
-            border-radius: 10px;
+            border-radius: 0;
+        }
+
+        .brand-logo-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .brand-logo {
+            display: block;
+            filter: drop-shadow(0 8px 16px rgba(16, 24, 48, .16));
+        }
+
+        .brand-logo.enbi-logo {
+            width: 60px;
+            height: 60px;
         }
 
         .brand-text {
@@ -1064,10 +1081,19 @@
                 gap: 0.65rem !important;
             }
 
+            .brand-logo-group {
+                gap: 0.45rem !important;
+            }
+
             .brand img {
-                width: 38px !important;
-                height: 38px !important;
+                width: 46px !important;
+                height: 46px !important;
                 flex-shrink: 0 !important;
+            }
+
+            .brand-logo.enbi-logo {
+                width: 48px !important;
+                height: 48px !important;
             }
 
             .brand-text {
@@ -1247,8 +1273,13 @@
             }
 
             .brand img {
-                width: 34px !important;
-                height: 34px !important;
+                width: 40px !important;
+                height: 40px !important;
+            }
+
+            .brand-logo.enbi-logo {
+                width: 42px !important;
+                height: 42px !important;
             }
 
             .brand-title {
@@ -1309,7 +1340,10 @@
     <header class="site-header" id="site-header">
         {{-- Brand --}}
         <a href="{{ route('home') }}" class="brand">
-            <img src="{{ asset('assets/metamedia.png') }}" alt="Logo Universitas Metamedia">
+            <span class="brand-logo-group">
+                <img src="{{ asset('assets/metamedia.png') }}" alt="Logo Universitas Metamedia" class="brand-logo">
+                <img src="{{ asset('assets/enbi1.png') }}" alt="Logo ENBI" class="brand-logo enbi-logo">
+            </span>
             <div class="brand-text">
                 <span class="brand-title">Universitas Metamedia</span>
                 <span class="brand-subtitle">Sistem Repository Digital</span>
@@ -1597,7 +1631,10 @@
     <aside class="mobile-drawer" id="mobile-drawer" aria-label="Menu Mobile" aria-hidden="true">
         <div class="drawer-header">
             <a href="{{ route('home') }}" class="brand">
-                <img src="{{ asset('assets/metamedia.png') }}" alt="Logo">
+                <span class="brand-logo-group">
+                    <img src="{{ asset('assets/metamedia.png') }}" alt="Logo Universitas Metamedia" class="brand-logo">
+                    <img src="{{ asset('assets/enbi1.png') }}" alt="Logo ENBI" class="brand-logo enbi-logo">
+                </span>
                 <div class="brand-text">
                     <span class="brand-title">Metamedia</span>
                     <span class="brand-subtitle">Repository Digital</span>

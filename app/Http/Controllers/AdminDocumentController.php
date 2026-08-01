@@ -14,13 +14,8 @@ class AdminDocumentController extends Controller
 {
     public function pending()
     {
-        $documents = RepositoryDocument::with(['owner', 'programStudi', 'jenisDokumen', 'dosenPembimbing'])
-            ->where('status', 'pending')
-            ->where(function ($query) {
-                $query->whereNotIn('kategori', ['skripsi', 'magang'])
-                    ->orWhereNull('dosen_pembimbing_id')
-                    ->orWhereNotNull('dosen_approved_at');
-            })
+        $documents = $this->verifiablePendingDocumentsQuery()
+            ->with(['owner', 'programStudi', 'jenisDokumen', 'dosenPembimbing'])
             ->latest()
             ->paginate(10);
 
@@ -33,7 +28,9 @@ class AdminDocumentController extends Controller
             ->latest()
             ->paginate(12);
 
-        return view('admin.documents.index', compact('documents'));
+        $bulkPendingCount = RepositoryDocument::where('status', 'pending')->count();
+
+        return view('admin.documents.index', compact('documents', 'bulkPendingCount'));
     }
 
     public function mahasiswa(Request $request)
@@ -185,6 +182,28 @@ class AdminDocumentController extends Controller
         ]);
 
         return back()->with('status', 'Status dokumen "'.$document->judul.'" berhasil diperbarui.');
+    }
+
+    public function verifyAll()
+    {
+        $count = RepositoryDocument::where('status', 'pending')->update([
+            'status' => 'terverifikasi',
+            'verified_by' => Auth::id(),
+            'verified_at' => now(),
+            'catatan_verifikasi' => null,
+        ]);
+
+        return back()->with('status', $count.' upload berhasil diverifikasi semuanya.');
+    }
+
+    private function verifiablePendingDocumentsQuery()
+    {
+        return RepositoryDocument::where('status', 'pending')
+            ->where(function ($query) {
+                $query->whereNotIn('kategori', ['skripsi', 'magang'])
+                    ->orWhereNull('dosen_pembimbing_id')
+                    ->orWhereNotNull('dosen_approved_at');
+            });
     }
 
     public function download(RepositoryDocument $document)
