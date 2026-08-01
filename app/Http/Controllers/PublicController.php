@@ -30,25 +30,42 @@ class PublicController extends Controller
 
     public function repository(Request $request, ?string $kategori = null)
     {
+        $search = trim((string) ($request->query('search') ?? $request->query('q') ?? ''));
+        $isSingleLetterSearch = strlen($search) === 1 && ctype_alpha($search);
+
         $documents = $this->publicDocuments()
             ->when($kategori, fn ($query) => $query->where('kategori', $kategori))
-            ->when($request->search, function ($query, string $search) {
+            ->when($search !== '', function ($query) use ($search, $isSingleLetterSearch) {
+                if ($isSingleLetterSearch) {
+                    $query->where('judul', 'like', $search.'%');
+
+                    return;
+                }
+
                 $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('judul', 'like', "%{$search}%")
-                        ->orWhere('nama', 'like', "%{$search}%")
-                        ->orWhere('nim', 'like', "%{$search}%")
-                        ->orWhere('nidn', 'like', "%{$search}%")
-                        ->orWhere('abstrak', 'like', "%{$search}%")
-                        ->orWhere('detail', 'like', "%{$search}%")
-                        ->orWhere('tempat_magang', 'like', "%{$search}%")
-                        ->orWhere('tahun', 'like', "%{$search}%");
+                    $keyword = '%'.$search.'%';
+
+                    $subQuery->where('judul', 'like', $keyword)
+                        ->orWhere('nama', 'like', $keyword)
+                        ->orWhere('nim', 'like', $keyword)
+                        ->orWhere('nidn', 'like', $keyword)
+                        ->orWhere('abstrak', 'like', $keyword)
+                        ->orWhere('detail', 'like', $keyword)
+                        ->orWhere('tempat_magang', 'like', $keyword)
+                        ->orWhere('tahun', 'like', $keyword);
                 });
             })
-            ->latest()
+            ->when($search !== '', function ($query) use ($search, $isSingleLetterSearch) {
+                if (! $isSingleLetterSearch) {
+                    $query->orderByRaw('CASE WHEN LOWER(judul) LIKE LOWER(?) THEN 0 ELSE 1 END', [$search.'%']);
+                }
+
+                $query->orderByRaw('LOWER(judul) ASC');
+            }, fn ($query) => $query->latest())
             ->paginate(12)
             ->withQueryString();
 
-        return view('pages.repository', compact('documents', 'kategori'));
+        return view('pages.repository', compact('documents', 'kategori', 'search'));
     }
 
     public function guides()

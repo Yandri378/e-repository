@@ -109,7 +109,14 @@ class RepositoryController extends Controller
             'bulan' => $data['bulan'] ?? now()->month,
             'tanggal_upload' => now(),
             'status' => $data['status'] ?? 'pending',
+            'submission_token' => Auth::user()->role === 'admin' ? Str::random(48) : null,
         ]));
+
+        if (Auth::user()->role === 'admin') {
+            return redirect()
+                ->route('public.upload.detail', [$document, $document->submission_token])
+                ->with('status', 'Data berhasil disimpan. Silakan cek preview data di halaman ini.');
+        }
 
         if (Auth::user()->role !== 'admin' && $document->jenis_input === 'upload') {
             $message = Auth::user()->role === 'mahasiswa'

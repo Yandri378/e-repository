@@ -8,8 +8,10 @@
         $currentUser = auth()->user();
         $identityLabel = ($actor ?? 'admin') === 'dosen' ? 'NIDN / Identitas Dosen' : 'NIM';
         $identityName = ($actor ?? 'admin') === 'dosen' ? 'nidn' : 'nim';
+        $isAdminManualSkripsi = ! $isPublic && $currentUser?->role === 'admin' && $kategori === 'skripsi';
         $canUploadProject = (($currentUser?->role === 'mahasiswa') || ($isPublic && ($actor ?? null) === 'mahasiswa'))
             && in_array($kategori, ['skripsi', 'magang'], true);
+        $canUploadProject = $canUploadProject || $isAdminManualSkripsi;
     @endphp
     <form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" class="auth-card wide">
         @csrf
@@ -34,11 +36,13 @@
                 </label>
             @endif
             <label>Nama
-                <input type="text" name="nama" value="{{ old('nama', $currentUser?->name) }}" required>
+                <input type="text" name="nama" value="{{ old('nama', $isAdminManualSkripsi ? '' : $currentUser?->name) }}" required>
             </label>
-            <label>Email
-                <input type="email" name="email" value="{{ old('email', $currentUser?->email) }}" @required($isPublic)>
-            </label>
+            @unless($isAdminManualSkripsi)
+                <label>Email
+                    <input type="email" name="email" value="{{ old('email', $currentUser?->email) }}" @required($isPublic)>
+                </label>
+            @endunless
             <label>{{ $identityLabel }}
                 <input type="text" name="{{ $identityName }}" value="{{ old($identityName, $identityName === 'nim' ? $currentUser?->nim : $currentUser?->nidn) }}" @required($isPublic)>
             </label>
@@ -83,15 +87,19 @@
             <label>Tahun
                 <input type="number" name="tahun" value="{{ old('tahun', date('Y')) }}" required>
             </label>
-            <label>Bulan
-                <input type="number" name="bulan" min="1" max="12" value="{{ old('bulan', date('n')) }}">
-            </label>
+            @unless($isAdminManualSkripsi)
+                <label>Bulan
+                    <input type="number" name="bulan" min="1" max="12" value="{{ old('bulan', date('n')) }}">
+                </label>
+            @endunless
             <label>Judul
                 <input type="text" name="judul" value="{{ old('judul') }}" required>
             </label>
-            <label>Tempat Magang
-                <input type="text" name="tempat_magang" value="{{ old('tempat_magang') }}">
-            </label>
+            @if ($kategori === 'magang')
+                <label>Tempat Magang
+                    <input type="text" name="tempat_magang" value="{{ old('tempat_magang') }}">
+                </label>
+            @endif
             <label>Jumlah Halaman
                 <input type="number" name="jumlah_halaman" value="{{ old('jumlah_halaman') }}">
             </label>
@@ -352,4 +360,3 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 @endsection
-

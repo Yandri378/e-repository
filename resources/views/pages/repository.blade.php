@@ -29,7 +29,7 @@
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/>
                         </svg>
-                        <input type="search" name="search" value="{{ request('search') }}"
+                        <input type="search" name="search" value="{{ $search }}"
                                placeholder="Cari judul, nama penulis/dosen, NIM, NIDN, tempat magang, abstrak..."
                                class="w-full rounded-2xl border-0 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-800 shadow-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all">
                     </div>
@@ -67,9 +67,9 @@
         </section>
 
         {{-- Info Pencarian --}}
-        @if(request('search'))
+        @if($search !== '')
             <div class="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
-                <span>Hasil pencarian untuk kata kunci: <strong>"{{ request('search') }}"</strong> ({{ $documents->total() }} dokumen ditemukan)</span>
+                <span>Hasil pencarian untuk kata kunci: <strong>"{{ $search }}"</strong> ({{ $documents->total() }} dokumen ditemukan)</span>
                 <a href="{{ route('repository.index', $kategori) }}" class="text-xs font-bold text-blue-600 hover:underline">Reset Pencarian</a>
             </div>
         @endif
