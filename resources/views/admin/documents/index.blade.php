@@ -42,21 +42,28 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('admin.documents.verify-all') }}"
-                    onsubmit="return confirm(@js('Verifikasi semua upload pending menjadi terverifikasi?'))">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition sm:w-auto {{ $bulkPendingCount > 0 ? 'bg-white text-blue-700 shadow-lg shadow-blue-900/20 hover:scale-[1.02] hover:bg-blue-50' : 'cursor-not-allowed bg-white/20 text-white/60 ring-1 ring-white/25' }}"
-                        {{ $bulkPendingCount > 0 ? '' : 'disabled' }}
-                        title="{{ $bulkPendingCount > 0 ? 'Verifikasi semua upload pending' : 'Tidak ada upload pending yang bisa diverifikasi' }}">
-                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-                        Terverifikasi Semua
-                        @if ($bulkPendingCount > 0)
-                            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">{{ $bulkPendingCount }}</span>
-                        @endif
-                    </button>
-                </form>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('admin.documents.create') }}"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white text-blue-700 px-4 py-2.5 text-sm font-bold shadow-lg shadow-blue-900/20 hover:scale-[1.02] hover:bg-blue-50 transition sm:w-auto">
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload Manual
+                    </a>
+                    <form method="POST" action="{{ route('admin.documents.verify-all') }}"
+                        onsubmit="return confirm(@js('Verifikasi semua upload pending menjadi terverifikasi?'))">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition sm:w-auto {{ $bulkPendingCount > 0 ? 'bg-white/20 text-white hover:bg-white/30 ring-1 ring-white/30' : 'cursor-not-allowed bg-white/10 text-white/50 ring-1 ring-white/20' }}"
+                            {{ $bulkPendingCount > 0 ? '' : 'disabled' }}
+                            title="{{ $bulkPendingCount > 0 ? 'Verifikasi semua upload pending' : 'Tidak ada upload pending yang bisa diverifikasi' }}">
+                            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                            Terverifikasi Semua
+                            @if ($bulkPendingCount > 0)
+                                <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{{ $bulkPendingCount }}</span>
+                            @endif
+                        </button>
+                    </form>
+                </div>
             </div>
         </section>
 

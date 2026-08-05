@@ -130,6 +130,8 @@ Route::middleware(['auth', 'account.active'])->group(function () {
     Route::middleware('role:admin')->prefix('admin/uploads')->name('admin.documents.')->group(function () {
         Route::get('/verifikasi', [AdminDocumentController::class, 'pending'])->name('pending');
         Route::get('/', [AdminDocumentController::class, 'index'])->name('index');
+        Route::get('/create', [AdminDocumentController::class, 'create'])->name('create');
+        Route::post('/store', [AdminDocumentController::class, 'store'])->name('store');
         Route::get('/import', [AdminDocumentController::class, 'showImport'])->name('import');
         Route::post('/import', [AdminDocumentController::class, 'import'])->name('import.store');
         Route::get('/import/template/{kategori}', [AdminDocumentController::class, 'downloadTemplate'])->name('import.template');

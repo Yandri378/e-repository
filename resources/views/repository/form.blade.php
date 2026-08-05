@@ -8,10 +8,7 @@
         $currentUser = auth()->user();
         $identityLabel = ($actor ?? 'admin') === 'dosen' ? 'NIDN / Identitas Dosen' : 'NIM';
         $identityName = ($actor ?? 'admin') === 'dosen' ? 'nidn' : 'nim';
-        $isAdminManualSkripsi = ! $isPublic && $currentUser?->role === 'admin' && $kategori === 'skripsi';
-        $canUploadProject = (($currentUser?->role === 'mahasiswa') || ($isPublic && ($actor ?? null) === 'mahasiswa'))
-            && in_array($kategori, ['skripsi', 'magang'], true);
-        $canUploadProject = $canUploadProject || $isAdminManualSkripsi;
+        $canUploadProject = in_array($kategori, ['skripsi', 'magang', 'penelitian', 'pkm'], true);
     @endphp
     <form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" class="auth-card wide">
         @csrf

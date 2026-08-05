@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Imports\RepositoryDocumentImport;
+use App\Models\JenisDokumen;
+use App\Models\ProgramStudi;
 use App\Models\RepositoryDocument;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AdminDocumentController extends Controller
@@ -57,6 +61,115 @@ class AdminDocumentController extends Controller
             'rejectedCount',
             'allCount'
         ));
+    }
+
+    public function create(Request $request)
+    {
+        $kategori = $request->query('kategori', 'skripsi');
+        if (! in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
+            $kategori = 'skripsi';
+        }
+
+        $programStudi = ProgramStudi::where('aktif', true)->orderBy('nama')->get();
+        $jenisDokumen = JenisDokumen::where('aktif', true)->orderBy('nama')->get();
+
+        return view('admin.documents.create', compact('kategori', 'programStudi', 'jenisDokumen'));
+    }
+
+    public function store(Request $request)
+    {
+        $kategori = $request->input('kategori', 'skripsi');
+        if (! in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
+            $kategori = 'skripsi';
+        }
+
+        $rules = [
+            'kategori' => ['required', Rule::in(['skripsi', 'penelitian', 'pkm'])],
+            'program_studi_id' => ['required', 'exists:program_studi,id'],
+            'jenis_dokumen_id' => ['nullable', 'exists:jenis_dokumen,id'],
+            'nama' => ['required', 'string', 'max:255'],
+            'tahun' => ['required', 'digits:4'],
+            'bulan' => ['nullable', 'integer', 'between:1,12'],
+            'judul' => ['required', 'string', 'max:255'],
+            'jumlah_halaman' => ['nullable', 'integer', 'min:1'],
+            'abstrak' => ['nullable', 'string'],
+            'detail' => ['nullable', 'string'],
+            'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
+            'file_dokumen' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:51200'],
+        ];
+
+        if ($kategori === 'skripsi') {
+            $rules['nim'] = ['required', 'string', 'max:30'];
+        } else {
+            $rules['nidn'] = ['required', 'string', 'max:30'];
+        }
+
+        $data = $request->validate($rules);
+
+        $uploadedPdf = $request->file('file_dokumen');
+        $storedPdfPath = $uploadedPdf->store('repository-documents', 'local');
+
+        $storedProjectPath = null;
+        if ($request->hasFile('file_project')) {
+            $storedProjectPath = $request->file('file_project')->store('repository-projects', 'local');
+        }
+
+        $pdfPageCount = $this->countPdfPages($uploadedPdf->getRealPath());
+
+        $document = RepositoryDocument::create([
+            'user_id' => Auth::id(),
+            'input_by' => Auth::id(),
+            'program_studi_id' => $data['program_studi_id'],
+            'jenis_dokumen_id' => $data['jenis_dokumen_id'] ?? null,
+            'kategori' => $kategori,
+            'jenis_input' => 'upload',
+            'nim' => $data['nim'] ?? null,
+            'nidn' => $data['nidn'] ?? null,
+            'nama' => $data['nama'],
+            'tahun' => $data['tahun'],
+            'bulan' => $data['bulan'] ?? now()->month,
+            'judul' => $data['judul'],
+            'jumlah_halaman' => $data['jumlah_halaman'] ?? null,
+            'abstrak' => $data['abstrak'] ?? null,
+            'detail' => $data['detail'] ?? null,
+            'status_penelitian' => $data['status_penelitian'] ?? null,
+            'file_dokumen' => $storedPdfPath,
+            'file_project' => $storedProjectPath,
+            'pdf_page_count' => $pdfPageCount,
+            'status' => 'terverifikasi',
+            'verified_by' => Auth::id(),
+            'verified_at' => now(),
+            'tanggal_upload' => now(),
+            'submission_token' => Str::random(48),
+        ]);
+
+        return redirect()
+            ->route('admin.documents.index', ['status' => 'terverifikasi'])
+            ->with('status', 'Data '.strtoupper($kategori).' "'.$document->judul.'" berhasil diupload secara manual.');
+    }
+
+    private function countPdfPages(string $filePath): ?int
+    {
+        if (! file_exists($filePath)) {
+            return null;
+        }
+
+        $handle = fopen($filePath, 'rb');
+        if (! $handle) {
+            return null;
+        }
+
+        $chunk = fread($handle, 204800);
+        fclose($handle);
+
+        if ($chunk === false) {
+            return null;
+        }
+
+        preg_match_all('/\/Type\s*\/Page[^s]/', $chunk, $matches);
+
+        return count($matches[0]) ?: null;
     }
 
     public function mahasiswa(Request $request)

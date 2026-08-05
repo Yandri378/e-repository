@@ -102,6 +102,16 @@
                     </svg>
                     <span>Kelola Upload</span>
                 </a>
+                <a class="{{ request()->routeIs('admin.documents.create*') ? 'active' : '' }}"
+                    href="{{ route('admin.documents.create') }}">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <span>Upload Manual</span>
+                </a>
                 <a class="{{ request()->routeIs('admin.documents.import*') ? 'active' : '' }}"
                     href="{{ route('admin.documents.import') }}">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
