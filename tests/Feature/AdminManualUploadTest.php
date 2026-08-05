@@ -58,6 +58,13 @@ class AdminManualUploadTest extends TestCase
         $response->assertRedirect('/login');
     }
 
+    public function test_get_manual_upload_store_url_redirects_to_create_page(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/admin/uploads/store?kategori=pkm');
+
+        $response->assertRedirect(route('admin.documents.create', ['kategori' => 'pkm']));
+    }
+
     public function test_admin_can_manually_upload_skripsi_mahasiswa_with_pdf_and_project_zip(): void
     {
         $pdfFile = UploadedFile::fake()->create('skripsi.pdf', 200, 'application/pdf');
@@ -154,5 +161,35 @@ class AdminManualUploadTest extends TestCase
 
         Storage::disk('local')->assertExists($document->file_dokumen);
         Storage::disk('local')->assertExists($document->file_project);
+    }
+
+    public function test_uploaded_document_appears_in_public_catalog(): void
+    {
+        $pdfFile = UploadedFile::fake()->create('skripsi_catalog.pdf', 200, 'application/pdf');
+
+        $this->actingAs($this->admin)->post(route('admin.documents.store'), [
+            'kategori'        => 'skripsi',
+            'nama'            => 'Andi Catalog Test',
+            'nim'             => '9999999999',
+            'program_studi_id'=> $this->prodi->id,
+            'tahun'           => '2025',
+            'judul'           => 'Judul Skripsi Andi Unik 99999',
+            'file_dokumen'    => $pdfFile,
+        ])->assertRedirect(route('admin.documents.index', ['status' => 'terverifikasi']));
+
+        // Verify document is in DB with correct status
+        $document = RepositoryDocument::where('nim', '9999999999')->firstOrFail();
+        $this->assertEquals('terverifikasi', $document->status);
+
+        // Verify document appears on the public repository catalog page
+        $catalogResponse = $this->get(route('repository.index'));
+        $catalogResponse->assertStatus(200);
+        $catalogResponse->assertSee('Andi Catalog Test');
+        $catalogResponse->assertSee('Judul Skripsi Andi Unik 99999');
+
+        // Verify document appears when searching by title
+        $searchResponse = $this->get(route('repository.index') . '?search=Judul+Skripsi+Andi+Unik');
+        $searchResponse->assertStatus(200);
+        $searchResponse->assertSee('Judul Skripsi Andi Unik 99999');
     }
 }

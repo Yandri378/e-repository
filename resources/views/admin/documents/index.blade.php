@@ -67,7 +67,49 @@
             </div>
         </section>
 
-        {{-- ============ ERROR ============ --}}
+        {{-- ============ SUCCESS / ERROR ============ --}}
+        @if (session('status'))
+            <div id="upload-success-toast"
+                 class="mt-5 flex items-start gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm sm:mt-6"
+                 role="alert">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/30">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-emerald-800">Upload Berhasil!</p>
+                    <p class="mt-0.5 text-sm text-emerald-700">{{ session('status') }}</p>
+                </div>
+                <button onclick="document.getElementById('upload-success-toast').remove()" class="mt-0.5 shrink-0 text-emerald-400 hover:text-emerald-700 transition">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div id="upload-error-toast"
+                 class="mt-5 flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 shadow-sm sm:mt-6"
+                 role="alert">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500 text-white shadow-md shadow-red-500/30">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-red-800">Gagal / Error!</p>
+                    <p class="mt-0.5 text-sm text-red-700">{{ session('error') }}</p>
+                </div>
+                <button onclick="document.getElementById('upload-error-toast').remove()" class="mt-0.5 shrink-0 text-red-400 hover:text-red-700 transition">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-red-700 shadow-sm sm:mt-6 sm:rounded-2xl sm:px-5 sm:py-4">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 shrink-0">

@@ -6,6 +6,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 
+use Illuminate\Http\Exceptions\PostTooLargeException;
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
@@ -27,5 +29,15 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->withErrors([
                     'login' => 'Sesi login kedaluwarsa. Silakan muat ulang halaman lalu coba login kembali.',
                 ]);
+        });
+
+        $exceptions->render(function (PostTooLargeException $e, Request $request) {
+            return redirect()
+                ->back()
+                ->withInput($request->except(['file_dokumen', 'file_project', 'file_excel', 'file']))
+                ->withErrors([
+                    'file_dokumen' => 'Ukuran file atau total data yang diunggah terlalu besar. Maksimal file PDF 10 MB dan file Project (ZIP/RAR) 300 MB.',
+                ])
+                ->with('error', 'Ukuran file yang diunggah melebihi batas maksimum server (Maksimal PDF 10 MB, Project 300 MB).');
         });
     })->create();

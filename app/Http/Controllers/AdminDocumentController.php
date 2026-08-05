@@ -96,7 +96,7 @@ class AdminDocumentController extends Controller
             'detail' => ['nullable', 'string'],
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
             'file_dokumen' => ['required', 'file', 'mimes:pdf', 'max:10240'],
-            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:51200'],
+            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:307200'],
         ];
 
         if ($kategori === 'skripsi') {
@@ -105,48 +105,74 @@ class AdminDocumentController extends Controller
             $rules['nidn'] = ['required', 'string', 'max:30'];
         }
 
-        $data = $request->validate($rules);
+        $messages = [
+            'nama.required' => 'Nama lengkap wajib diisi.',
+            'nim.required' => 'NIM mahasiswa wajib diisi.',
+            'nidn.required' => 'NIDN dosen wajib diisi.',
+            'program_studi_id.required' => 'Program studi wajib dipilih.',
+            'program_studi_id.exists' => 'Program studi yang dipilih tidak valid.',
+            'tahun.required' => 'Tahun penerbitan/laporan wajib diisi.',
+            'tahun.digits' => 'Tahun harus berupa 4 digit angka (contoh: 2024).',
+            'judul.required' => 'Judul dokumen/penelitian wajib diisi.',
+            'file_dokumen.required' => 'File dokumen PDF wajib diunggah.',
+            'file_dokumen.mimes' => 'File dokumen harus berformat PDF (.pdf).',
+            'file_dokumen.max' => 'Ukuran file dokumen PDF melebihi batas maksimum 10 MB.',
+            'file_project.mimes' => 'File project harus berformat ZIP (.zip) atau RAR (.rar).',
+            'file_project.extensions' => 'File project harus berekstensi .zip atau .rar.',
+            'file_project.max' => 'Ukuran file project ZIP/RAR melebihi batas maksimum 300 MB.',
+        ];
 
-        $uploadedPdf = $request->file('file_dokumen');
-        $storedPdfPath = $uploadedPdf->store('repository-documents', 'local');
+        $data = $request->validate($rules, $messages);
 
-        $storedProjectPath = null;
-        if ($request->hasFile('file_project')) {
-            $storedProjectPath = $request->file('file_project')->store('repository-projects', 'local');
+        try {
+            $uploadedPdf = $request->file('file_dokumen');
+            $storedPdfPath = $uploadedPdf->store('repository-documents', 'local');
+
+            $storedProjectPath = null;
+            if ($request->hasFile('file_project')) {
+                $storedProjectPath = $request->file('file_project')->store('repository-projects', 'local');
+            }
+
+            $pdfPageCount = $this->countPdfPages($uploadedPdf->getRealPath());
+
+            $document = RepositoryDocument::create([
+                'user_id' => Auth::id(),
+                'input_by' => Auth::id(),
+                'program_studi_id' => $data['program_studi_id'],
+                'jenis_dokumen_id' => $data['jenis_dokumen_id'] ?? null,
+                'kategori' => $kategori,
+                'jenis_input' => 'upload',
+                'nim' => $data['nim'] ?? null,
+                'nidn' => $data['nidn'] ?? null,
+                'nama' => $data['nama'],
+                'tahun' => $data['tahun'],
+                'bulan' => $data['bulan'] ?? now()->month,
+                'judul' => $data['judul'],
+                'jumlah_halaman' => $data['jumlah_halaman'] ?? null,
+                'abstrak' => $data['abstrak'] ?? null,
+                'detail' => $data['detail'] ?? null,
+                'status_penelitian' => $data['status_penelitian'] ?? null,
+                'file_dokumen' => $storedPdfPath,
+                'file_project' => $storedProjectPath,
+                'pdf_page_count' => $pdfPageCount,
+                'status' => 'terverifikasi',
+                'verified_by' => Auth::id(),
+                'verified_at' => now(),
+                'tanggal_upload' => now(),
+                'submission_token' => Str::random(48),
+            ]);
+
+            return redirect()
+                ->route('admin.documents.index', ['status' => 'terverifikasi'])
+                ->with('status', 'Data '.strtoupper($kategori).' "'.$document->judul.'" berhasil diupload secara manual.');
+        } catch (\Throwable $e) {
+            Log::error('Upload manual admin gagal: '.$e->getMessage(), ['exception' => $e]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Upload dokumen gagal: '.$e->getMessage());
         }
-
-        $pdfPageCount = $this->countPdfPages($uploadedPdf->getRealPath());
-
-        $document = RepositoryDocument::create([
-            'user_id' => Auth::id(),
-            'input_by' => Auth::id(),
-            'program_studi_id' => $data['program_studi_id'],
-            'jenis_dokumen_id' => $data['jenis_dokumen_id'] ?? null,
-            'kategori' => $kategori,
-            'jenis_input' => 'upload',
-            'nim' => $data['nim'] ?? null,
-            'nidn' => $data['nidn'] ?? null,
-            'nama' => $data['nama'],
-            'tahun' => $data['tahun'],
-            'bulan' => $data['bulan'] ?? now()->month,
-            'judul' => $data['judul'],
-            'jumlah_halaman' => $data['jumlah_halaman'] ?? null,
-            'abstrak' => $data['abstrak'] ?? null,
-            'detail' => $data['detail'] ?? null,
-            'status_penelitian' => $data['status_penelitian'] ?? null,
-            'file_dokumen' => $storedPdfPath,
-            'file_project' => $storedProjectPath,
-            'pdf_page_count' => $pdfPageCount,
-            'status' => 'terverifikasi',
-            'verified_by' => Auth::id(),
-            'verified_at' => now(),
-            'tanggal_upload' => now(),
-            'submission_token' => Str::random(48),
-        ]);
-
-        return redirect()
-            ->route('admin.documents.index', ['status' => 'terverifikasi'])
-            ->with('status', 'Data '.strtoupper($kategori).' "'.$document->judul.'" berhasil diupload secara manual.');
     }
 
     private function countPdfPages(string $filePath): ?int

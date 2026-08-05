@@ -34,6 +34,18 @@
         </section>
 
         {{-- Flash Error Messages --}}
+        @if (session('error'))
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm flex items-start gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500 text-white shrink-0 shadow-md shadow-red-500/30">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-red-800 text-sm">Upload Gagal!</p>
+                    <p class="text-sm text-red-700 mt-0.5">{{ session('error') }}</p>
+                </div>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
                 <div class="flex items-center gap-2 text-red-700 font-bold text-sm mb-2">
@@ -80,7 +92,7 @@
         </div>
 
         {{-- ============ FORM MANUAL UPLOAD ============ --}}
-        <form method="POST" action="{{ route('admin.documents.store') }}" enctype="multipart/form-data" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 space-y-6">
+        <form id="adminUploadForm" method="POST" action="{{ route('admin.documents.store') }}" enctype="multipart/form-data" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 space-y-6">
             @csrf
             <input type="hidden" name="kategori" value="{{ $kategori }}">
 
@@ -260,7 +272,7 @@
                                 <p class="text-xs text-slate-500">Format PDF, maksimal 10MB</p>
                             </div>
                         </div>
-                        <input type="file" name="file_dokumen" accept="application/pdf" required
+                        <input type="file" id="file_dokumen_input" name="file_dokumen" accept="application/pdf" required
                             class="block w-full text-xs text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-blue-700 cursor-pointer">
                     </div>
 
@@ -276,10 +288,10 @@
                             </div>
                             <div>
                                 <h3 class="text-sm font-bold text-slate-900">File Project (RAR / ZIP)</h3>
-                                <p class="text-xs text-slate-500">Format .zip atau .rar, maksimal 50MB</p>
+                                <p class="text-xs text-slate-500">Format .zip atau .rar, maksimal 300MB</p>
                             </div>
                         </div>
-                        <input type="file" name="file_project" accept=".zip,.rar,application/zip,application/x-rar-compressed"
+                        <input type="file" id="file_project_input" name="file_project" accept=".zip,.rar,application/zip,application/x-rar-compressed"
                             class="block w-full text-xs text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-indigo-700 cursor-pointer">
                     </div>
                 </div>
@@ -290,17 +302,105 @@
                 <a href="{{ route('admin.documents.index') }}" class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
                     Batal
                 </a>
-                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.01]">
+                <button type="submit" id="adminSubmitBtn" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.01]">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                         <polyline points="17 21 17 13 7 13 7 21"/>
                         <polyline points="7 3 7 8 15 8"/>
                     </svg>
-                    Simpan & Upload Data {{ strtoupper($kategori) }}
+                    <span id="adminSubmitBtnText">Simpan & Upload Data {{ strtoupper($kategori) }}</span>
                 </button>
             </div>
         </form>
 
     </div>
 </div>
+
+{{-- Upload progress overlay --}}
+<div id="upload-overlay" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="mx-4 w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl text-center">
+        <div class="flex justify-center mb-4">
+            <div class="relative flex h-20 w-20 items-center justify-center rounded-full bg-blue-100">
+                <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <div class="absolute inset-0 rounded-full border-4 border-blue-200 animate-ping opacity-30"></div>
+            </div>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900">Sedang Mengunggah Data...</h3>
+        <p class="mt-2 text-sm text-slate-500" id="upload-overlay-info">Mohon tunggu, jangan tutup halaman ini.</p>
+        <div class="mt-5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 animate-pulse" style="width: 100%"></div>
+        </div>
+        <p class="mt-3 text-xs text-slate-400">File sedang diproses oleh server...</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form       = document.getElementById('adminUploadForm');
+    const docInput   = document.getElementById('file_dokumen_input');
+    const projInput  = document.getElementById('file_project_input');
+    const submitBtn  = document.getElementById('adminSubmitBtn');
+    const submitText = document.getElementById('adminSubmitBtnText');
+    const overlay    = document.getElementById('upload-overlay');
+    const overlayInfo = document.getElementById('upload-overlay-info');
+
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+        const maxDocSize  = 10  * 1024 * 1024;  // 10 MB
+        const maxProjSize = 300 * 1024 * 1024;  // 300 MB
+
+        // — Validasi ukuran PDF —
+        if (docInput && docInput.files.length > 0) {
+            if (docInput.files[0].size > maxDocSize) {
+                e.preventDefault();
+                showError('Ukuran file PDF (' + (docInput.files[0].size / (1024 * 1024)).toFixed(2) + ' MB) melebihi batas 10 MB.');
+                return false;
+            }
+        }
+
+        // — Validasi ukuran Project —
+        if (projInput && projInput.files.length > 0) {
+            if (projInput.files[0].size > maxProjSize) {
+                e.preventDefault();
+                showError('Ukuran file Project (' + (projInput.files[0].size / (1024 * 1024)).toFixed(2) + ' MB) melebihi batas 300 MB.');
+                return false;
+            }
+        }
+
+        // — Tampilkan overlay upload —
+        var info = 'Mengunggah file, mohon tunggu...';
+        if (docInput && docInput.files.length > 0) {
+            info = 'Mengunggah: ' + docInput.files[0].name;
+            if (projInput && projInput.files.length > 0) {
+                info += ' + ' + projInput.files[0].name;
+            }
+        }
+        if (overlayInfo) overlayInfo.textContent = info;
+        if (overlay) overlay.classList.remove('hidden');
+
+        // — Kunci tombol submit —
+        if (submitBtn && submitText) {
+            submitBtn.style.pointerEvents = 'none';
+            submitBtn.style.opacity = '0.6';
+            submitText.textContent = 'Mengunggah...';
+        }
+    });
+
+    function showError(msg) {
+        // Buat banner error kecil di atas form
+        var old = document.getElementById('js-upload-error');
+        if (old) old.remove();
+        var div = document.createElement('div');
+        div.id = 'js-upload-error';
+        div.className = 'mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm font-medium';
+        div.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" class="mt-0.5 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>' + msg + '</span>';
+        form.insertBefore(div, form.firstChild);
+        window.scrollTo({ top: div.getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
+    }
+});
+</script>
 @endsection

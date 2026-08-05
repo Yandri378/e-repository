@@ -62,7 +62,7 @@ class RepositoryController extends Controller
             'detail' => ['nullable', 'string'],
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
             'file_dokumen' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
-            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:51200'],
+            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:102400'],
             // PDF completeness declaration (required for mahasiswa skripsi/magang if file is uploaded)
             'pdf_kelengkapan_deklarasi' => ['nullable', 'boolean'],
         ]);
@@ -226,7 +226,7 @@ class RepositoryController extends Controller
             'detail' => ['nullable', 'string', 'max:2000'],
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
             'file_dokumen' => ['required', 'file', 'mimes:pdf', 'max:5120'],
-            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:51200'],
+            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:102400'],
         ]);
 
         // Store uploads in private disk to prevent direct public access

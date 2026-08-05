@@ -20,8 +20,46 @@
                 <small class="upload-last-update">Terakhir diperiksa: --</small>
             </div>
         @endif
+        {{-- SUCCESS NOTIFICATION --}}
+        @if (session('status'))
+            <div class="upload-alert-box upload-alert-success" role="alert">
+                <div class="alert-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="alert-body">
+                    <strong>Pemberitahuan Berhasil:</strong>
+                    <p>{{ session('status') }}</p>
+                </div>
+            </div>
+        @endif
+
+        {{-- ERROR NOTIFICATION WITH SPECIFIC REASONS --}}
+        @if (session('error'))
+            <div class="upload-alert-box upload-alert-danger" role="alert">
+                <div class="alert-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div class="alert-body">
+                    <strong>Upload / Proses Gagal:</strong>
+                    <p>{{ session('error') }}</p>
+                </div>
+            </div>
+        @endif
+
         @if ($errors->any())
-            <div class="error-box">{{ $errors->first() }}</div>
+            <div class="upload-alert-box upload-alert-danger" role="alert">
+                <div class="alert-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div class="alert-body">
+                    <strong>Upload Gagal! Terdapat kesalahan pada input form:</strong>
+                    <ul class="error-reasons-list">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
         @endif
         <div class="form-grid">
             @if (! $isPublic && $currentUser?->role === 'admin' && $kategori === 'magang')
@@ -33,7 +71,7 @@
                 </label>
             @endif
             <label>Nama
-                <input type="text" name="nama" value="{{ old('nama', $isAdminManualSkripsi ? '' : $currentUser?->name) }}" required>
+                <input type="text" name="nama" value="{{ old('nama', ($isAdminManualSkripsi ?? false) ? '' : $currentUser?->name) }}" required>
             </label>
             <label>{{ $identityLabel }}
                 <input type="text" name="{{ $identityName }}" value="{{ old($identityName, $identityName === 'nim' ? $currentUser?->nim : $currentUser?->nidn) }}" @required($isPublic)>
@@ -187,12 +225,24 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!val) return null;
 
         const options = dosenList ? dosenList.options : [];
+        // First try exact match
         for (let i = 0; i < options.length; i++) {
             const optVal = options[i].value.trim().toLowerCase();
             const optName = (options[i].getAttribute('data-name') || '').trim().toLowerCase();
             const optNidn = (options[i].getAttribute('data-nidn') || '').trim().toLowerCase();
 
             if (optVal === val || optName === val || optNidn === val) {
+                return {
+                    id: options[i].getAttribute('data-id'),
+                    fullText: options[i].value
+                };
+            }
+        }
+        // Fallback: partial match
+        for (let i = 0; i < options.length; i++) {
+            const optVal = options[i].value.trim().toLowerCase();
+            const optName = (options[i].getAttribute('data-name') || '').trim().toLowerCase();
+            if (optVal.includes(val) || (optName && optName.includes(val))) {
                 return {
                     id: options[i].getAttribute('data-id'),
                     fullText: options[i].value
@@ -297,6 +347,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            // Custom validation for file sizes
+            const docInput = form.querySelector('input[name="file_dokumen"]');
+            const projInput = form.querySelector('input[name="file_project"]');
+            if (docInput && docInput.files.length > 0 && docInput.files[0].size > 10 * 1024 * 1024) {
+                e.preventDefault();
+                alert('Ukuran file PDF dokumen (' + (docInput.files[0].size / (1024*1024)).toFixed(2) + ' MB) melebihi batas maksimum 10 MB.');
+                return;
+            }
+            if (projInput && projInput.files.length > 0 && projInput.files[0].size > 100 * 1024 * 1024) {
+                e.preventDefault();
+                alert('Ukuran file Project ZIP/RAR (' + (projInput.files[0].size / (1024*1024)).toFixed(2) + ' MB) melebihi batas maksimum 100 MB.');
+                return;
+            }
+
             // Custom validation for declaration checkbox visibility
             if (declarationSection && declarationSection.style.display !== 'none') {
                 if (dekCheckbox && !dekCheckbox.checked) {
@@ -326,10 +390,9 @@ document.addEventListener('DOMContentLoaded', function () {
             // Show submit loading notification
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
-                setTimeout(() => {
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = 'Memproses & Menyimpan Data...';
-                }, 0);
+                submitBtn.style.pointerEvents = 'none';
+                submitBtn.style.opacity = '0.75';
+                submitBtn.innerText = 'Memproses & Menyimpan Data...';
 
                 if (!document.querySelector('.submit-loading-indicator')) {
                     const loader = document.createElement('div');

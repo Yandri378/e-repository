@@ -66,6 +66,7 @@ class StudentProjectUploadApprovalTest extends TestCase
                 'jumlah_halaman' => 55,
                 'file_dokumen' => UploadedFile::fake()->create('laporan.pdf', 120, 'application/pdf'),
                 'file_project' => UploadedFile::fake()->create('project.zip', 256, 'application/zip'),
+                'pdf_kelengkapan_deklarasi' => '1',
             ]);
 
         $response->assertRedirect(route('mahasiswa.dashboard'));

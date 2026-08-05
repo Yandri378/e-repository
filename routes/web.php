@@ -131,6 +131,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/verifikasi', [AdminDocumentController::class, 'pending'])->name('pending');
         Route::get('/', [AdminDocumentController::class, 'index'])->name('index');
         Route::get('/create', [AdminDocumentController::class, 'create'])->name('create');
+        Route::get('/store', fn () => redirect()->route('admin.documents.create', request()->only('kategori')));
         Route::post('/store', [AdminDocumentController::class, 'store'])->name('store');
         Route::get('/import', [AdminDocumentController::class, 'showImport'])->name('import');
         Route::post('/import', [AdminDocumentController::class, 'import'])->name('import.store');
