@@ -36,8 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->back()
                 ->withInput($request->except(['file_dokumen', 'file_project', 'file_excel', 'file']))
                 ->withErrors([
-                    'file_dokumen' => 'Ukuran file atau total data yang diunggah terlalu besar. Maksimal file PDF 10 MB dan file Project (ZIP/RAR) 300 MB.',
+                    'file_dokumen' => 'Ukuran file atau total data yang diunggah terlalu besar. Maksimal file PDF 10 MB dan file Project (ZIP/RAR) 800 MB.',
                 ])
-                ->with('error', 'Ukuran file yang diunggah melebihi batas maksimum server (Maksimal PDF 10 MB, Project 300 MB).');
+                ->with('error', 'Ukuran file yang diunggah melebihi batas maksimum server (Maksimal PDF 10 MB, Project 800 MB).');
         });
     })->create();

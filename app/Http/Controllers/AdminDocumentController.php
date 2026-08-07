@@ -9,7 +9,9 @@ use App\Models\ProgramStudi;
 use App\Models\RepositoryDocument;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -47,10 +49,10 @@ class AdminDocumentController extends Controller
         $documents = $query->latest()->paginate(12)->withQueryString();
 
         $bulkPendingCount = RepositoryDocument::where('status', 'pending')->count();
-        $pendingCount     = $bulkPendingCount;
-        $verifiedCount    = RepositoryDocument::where('status', 'terverifikasi')->count();
-        $rejectedCount    = RepositoryDocument::where('status', 'ditolak')->count();
-        $allCount         = RepositoryDocument::count();
+        $pendingCount = $bulkPendingCount;
+        $verifiedCount = RepositoryDocument::where('status', 'terverifikasi')->count();
+        $rejectedCount = RepositoryDocument::where('status', 'ditolak')->count();
+        $allCount = RepositoryDocument::count();
 
         return view('admin.documents.index', compact(
             'documents',
@@ -66,7 +68,7 @@ class AdminDocumentController extends Controller
     public function create(Request $request)
     {
         $kategori = $request->query('kategori', 'skripsi');
-        if (! in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
+        if (!in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
             $kategori = 'skripsi';
         }
 
@@ -79,7 +81,7 @@ class AdminDocumentController extends Controller
     public function store(Request $request)
     {
         $kategori = $request->input('kategori', 'skripsi');
-        if (! in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
+        if (!in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
             $kategori = 'skripsi';
         }
 
@@ -95,8 +97,8 @@ class AdminDocumentController extends Controller
             'abstrak' => ['nullable', 'string'],
             'detail' => ['nullable', 'string'],
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
-            'file_dokumen' => ['required', 'file', 'mimes:pdf', 'max:10240'],
-            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:307200'],
+            'file_dokumen' => ['required', 'file', 'mimetypes:application/pdf,application/x-pdf,text/pdf,application/octet-stream', 'extensions:pdf', 'max:10240'],
+            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:819200'],
         ];
 
         if ($kategori === 'skripsi') {
@@ -119,21 +121,35 @@ class AdminDocumentController extends Controller
             'file_dokumen.max' => 'Ukuran file dokumen PDF melebihi batas maksimum 10 MB.',
             'file_project.mimes' => 'File project harus berformat ZIP (.zip) atau RAR (.rar).',
             'file_project.extensions' => 'File project harus berekstensi .zip atau .rar.',
-            'file_project.max' => 'Ukuran file project ZIP/RAR melebihi batas maksimum 300 MB.',
+            'file_project.max' => 'Ukuran file project ZIP/RAR melebihi batas maksimum 800 MB.',
         ];
 
         $data = $request->validate($rules, $messages);
 
         try {
             $uploadedPdf = $request->file('file_dokumen');
-            $storedPdfPath = $uploadedPdf->store('repository-documents', 'local');
+            $storedPdfPath = $this->storeUploadedFile($uploadedPdf, 'repository-documents');
 
             $storedProjectPath = null;
             if ($request->hasFile('file_project')) {
-                $storedProjectPath = $request->file('file_project')->store('repository-projects', 'local');
+                try {
+                    $storedProjectPath = $this->storeUploadedFile($request->file('file_project'), 'repository-projects');
+                } catch (\Throwable $projectStorageException) {
+                    Log::warning('Gagal menyimpan file project upload manual admin, dokumen tetap disimpan tanpa file project.', [
+                        'exception' => $projectStorageException,
+                    ]);
+                }
             }
 
-            $pdfPageCount = $this->countPdfPages($uploadedPdf->getRealPath());
+            $pdfPageCount = null;
+            try {
+                $tempPath = $uploadedPdf->getPathname();
+                if ($tempPath && is_file($tempPath)) {
+                    $pdfPageCount = $this->countPdfPages($tempPath);
+                }
+            } catch (\Throwable $pageCountException) {
+                Log::warning('Gagal menghitung halaman PDF saat upload manual admin.', ['exception' => $pageCountException]);
+            }
 
             $document = RepositoryDocument::create([
                 'user_id' => Auth::id(),
@@ -164,25 +180,50 @@ class AdminDocumentController extends Controller
 
             return redirect()
                 ->route('admin.documents.index', ['status' => 'terverifikasi'])
-                ->with('status', 'Data '.strtoupper($kategori).' "'.$document->judul.'" berhasil diupload secara manual.');
+                ->with('status', 'Data ' . strtoupper($kategori) . ' "' . $document->judul . '" berhasil diupload secara manual.');
         } catch (\Throwable $e) {
-            Log::error('Upload manual admin gagal: '.$e->getMessage(), ['exception' => $e]);
+            Log::error('Upload manual admin gagal: ' . $e->getMessage(), ['exception' => $e]);
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Upload dokumen gagal: '.$e->getMessage());
+                ->with('error', 'Upload dokumen gagal: ' . $e->getMessage());
         }
+    }
+
+    private function storeUploadedFile(UploadedFile $uploadedFile, string $directory): string
+    {
+        $lastException = null;
+
+        foreach (['local', 'public'] as $disk) {
+            try {
+                $path = $uploadedFile->store($directory, $disk);
+
+                if ($path) {
+                    return $path;
+                }
+            } catch (\Throwable $exception) {
+                $lastException = $exception;
+                Log::warning('Gagal menyimpan file upload ke disk.', [
+                    'disk' => $disk,
+                    'directory' => $directory,
+                    'filename' => $uploadedFile->getClientOriginalName(),
+                    'exception' => $exception,
+                ]);
+            }
+        }
+
+        throw new \RuntimeException('Gagal menyimpan berkas ke penyimpanan server. Silakan coba lagi atau hubungi admin.', 0, $lastException);
     }
 
     private function countPdfPages(string $filePath): ?int
     {
-        if (! file_exists($filePath)) {
+        if (!file_exists($filePath)) {
             return null;
         }
 
         $handle = fopen($filePath, 'rb');
-        if (! $handle) {
+        if (!$handle) {
             return null;
         }
 
@@ -216,7 +257,7 @@ class AdminDocumentController extends Controller
 
     public function dosen(Request $request, ?string $kategori = null)
     {
-        abort_if($kategori && ! in_array($kategori, ['pkm', 'penelitian'], true), 404);
+        abort_if($kategori && !in_array($kategori, ['pkm', 'penelitian'], true), 404);
 
         $documents = $this->searchDocuments($request)
             ->whereIn('kategori', $kategori ? [$kategori] : ['pkm', 'penelitian'])
@@ -229,7 +270,7 @@ class AdminDocumentController extends Controller
 
     public function exportMahasiswa(Request $request, string $format)
     {
-        abort_if(! in_array($format, ['excel', 'pdf'], true), 404);
+        abort_if(!in_array($format, ['excel', 'pdf'], true), 404);
 
         $documents = $this->searchDocuments($request)
             ->whereIn('kategori', ['skripsi', 'magang'])
@@ -255,10 +296,10 @@ class AdminDocumentController extends Controller
 
     public function exportDosen(Request $request, ?string $kategori = null, string $format)
     {
-        abort_if(! in_array($format, ['excel', 'pdf'], true), 404);
+        abort_if(!in_array($format, ['excel', 'pdf'], true), 404);
 
         $documents = $this->searchDocuments($request)
-            ->when($kategori, fn ($q) => $q->where('kategori', $kategori))
+            ->when($kategori, fn($q) => $q->where('kategori', $kategori))
             ->latest()
             ->get();
 
@@ -294,7 +335,7 @@ class AdminDocumentController extends Controller
         }
 
         $content = collect($lines)
-            ->map(fn ($line) => '('.str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line).') Tj T*')
+            ->map(fn($line) => '(' . str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line) . ') Tj T*')
             ->implode("\n");
         $stream = "BT /F1 10 Tf 40 800 Td 14 TL\n$content\nET";
         $objects = [
@@ -302,7 +343,7 @@ class AdminDocumentController extends Controller
             "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n",
             "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n",
             "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n",
-            "5 0 obj << /Length ".strlen($stream)." >> stream\n$stream\nendstream endobj\n",
+            "5 0 obj << /Length " . strlen($stream) . " >> stream\n$stream\nendstream endobj\n",
         ];
 
         $pdf = "%PDF-1.4\n";
@@ -313,12 +354,12 @@ class AdminDocumentController extends Controller
         }
 
         $xref = strlen($pdf);
-        $pdf .= "xref\n0 ".(count($objects) + 1)."\n0000000000 65535 f \n";
+        $pdf .= "xref\n0 " . (count($objects) + 1) . "\n0000000000 65535 f \n";
         foreach (array_slice($offsets, 1) as $offset) {
             $pdf .= sprintf("%010d 00000 n \n", $offset);
         }
 
-        return $pdf."trailer << /Size ".(count($objects) + 1)." /Root 1 0 R >>\nstartxref\n$xref\n%%EOF";
+        return $pdf . "trailer << /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n$xref\n%%EOF";
     }
 
     public function updateStatus(Request $request, RepositoryDocument $document)
@@ -332,7 +373,7 @@ class AdminDocumentController extends Controller
             $data['status'] === 'terverifikasi'
             && in_array($document->kategori, ['skripsi', 'magang'], true)
             && $document->dosen_pembimbing_id
-            && ! $document->dosen_approved_at
+            && !$document->dosen_approved_at
         ) {
             return back()->withErrors([
                 'status' => 'Dokumen mahasiswa harus di-ACC dosen pembimbing terlebih dahulu.',
@@ -346,7 +387,7 @@ class AdminDocumentController extends Controller
             'catatan_verifikasi' => $data['catatan_verifikasi'] ?? null,
         ]);
 
-        return back()->with('status', 'Status dokumen "'.$document->judul.'" berhasil diperbarui.');
+        return back()->with('status', 'Status dokumen "' . $document->judul . '" berhasil diperbarui.');
     }
 
     public function verifyAll()
@@ -358,7 +399,7 @@ class AdminDocumentController extends Controller
             'catatan_verifikasi' => null,
         ]);
 
-        return back()->with('status', $count.' upload berhasil diverifikasi semuanya.');
+        return back()->with('status', $count . ' upload berhasil diverifikasi semuanya.');
     }
 
     private function verifiablePendingDocumentsQuery()
@@ -373,13 +414,13 @@ class AdminDocumentController extends Controller
 
     public function download(RepositoryDocument $document)
     {
-        abort_if(! $document->file_dokumen, 404, 'File dokumen belum tersedia.');
+        abort_if(!$document->file_dokumen, 404, 'File dokumen belum tersedia.');
         // Prefer private storage; fallback to public
         if (Storage::disk('local')->exists($document->file_dokumen)) {
             return Storage::disk('local')->download($document->file_dokumen);
         }
 
-        abort_if(! Storage::disk('public')->exists($document->file_dokumen), 404, 'File dokumen tidak ditemukan.');
+        abort_if(!Storage::disk('public')->exists($document->file_dokumen), 404, 'File dokumen tidak ditemukan.');
 
         return Storage::disk('public')->download($document->file_dokumen);
     }
@@ -391,7 +432,7 @@ class AdminDocumentController extends Controller
         foreach (['file_dokumen', 'file_project'] as $field) {
             $path = $document->{$field};
 
-            if (! $path) {
+            if (!$path) {
                 continue;
             }
 
@@ -406,7 +447,7 @@ class AdminDocumentController extends Controller
 
         $document->delete();
 
-        return back()->with('status', 'Data dokumen "'.$title.'" berhasil dihapus.');
+        return back()->with('status', 'Data dokumen "' . $title . '" berhasil dihapus.');
     }
 
     public function downloadRequests(Request $request)
@@ -431,14 +472,14 @@ class AdminDocumentController extends Controller
         $approvalMsg = implode("\n", [
             'Halo, permintaan unduh dokumen Anda telah disetujui oleh pustaka.',
             '',
-            'Dokumen: '.($downloadRequest->document->judul ?? '-'),
+            'Dokumen: ' . ($downloadRequest->document->judul ?? '-'),
             'Anda dapat mengunduh melalui link ini (masukkan submission token jika diperlukan):',
-            route('repository.download', $downloadRequest->document).'?submission_token='.$downloadRequest->submission_token,
+            route('repository.download', $downloadRequest->document) . '?submission_token=' . $downloadRequest->submission_token,
             '',
             'Terima kasih.'
         ]);
 
-        $waUrl = $phone ? ('https://wa.me/'.$phone.'?text='.rawurlencode($approvalMsg)) : null;
+        $waUrl = $phone ? ('https://wa.me/' . $phone . '?text=' . rawurlencode($approvalMsg)) : null;
 
         return back()->with('status', 'Permintaan unduh telah disetujui.')->with('whatsapp_notification_url', $waUrl);
     }
@@ -471,14 +512,14 @@ class AdminDocumentController extends Controller
         $document->update([$data['field'] => $data['value']]);
 
         $labels = [
-            'hard_copy_submitted'      => 'Status hard copy',
+            'hard_copy_submitted' => 'Status hard copy',
             'pdf_kelengkapan_confirmed' => 'Konfirmasi kelengkapan PDF',
-            'has_active_loans'         => 'Status pinjaman buku',
+            'has_active_loans' => 'Status pinjaman buku',
         ];
 
         $statusText = $data['value'] ? 'diaktifkan' : 'dinonaktifkan';
 
-        return back()->with('status', ($labels[$data['field']] ?? $data['field']).' berhasil '.$statusText.' untuk dokumen "'.$document->judul.'".');
+        return back()->with('status', ($labels[$data['field']] ?? $data['field']) . ' berhasil ' . $statusText . ' untuk dokumen "' . $document->judul . '".');
     }
 
     /**
@@ -488,25 +529,25 @@ class AdminDocumentController extends Controller
     public function approveBebasPustaka(RepositoryDocument $document)
     {
         // Ensure all other checklist items are done (except the approval itself)
-        $requiredMet = ! $document->has_active_loans
+        $requiredMet = !$document->has_active_loans
             && $document->dosen_approved_at
             && $document->pdf_kelengkapan_deklarasi
             && $document->pdf_kelengkapan_confirmed
             && $document->hard_copy_submitted;
 
-        if (! $requiredMet) {
+        if (!$requiredMet) {
             return back()->withErrors([
                 'bebas_pustaka' => 'Tidak dapat memberikan izin: masih ada syarat bebas pustaka yang belum terpenuhi. Pastikan: tidak ada pinjaman buku, sudah ACC dosen, PDF sudah dikonfirmasi lengkap, dan hard copy sudah diserahkan.',
             ]);
         }
 
         $document->update([
-            'bebas_pustaka_diizinkan'    => true,
+            'bebas_pustaka_diizinkan' => true,
             'bebas_pustaka_diizinkan_by' => Auth::id(),
             'bebas_pustaka_diizinkan_at' => now(),
         ]);
 
-        return back()->with('status', 'Izin download Kartu Bebas Pustaka berhasil diberikan untuk "'.$document->judul.'".');
+        return back()->with('status', 'Izin download Kartu Bebas Pustaka berhasil diberikan untuk "' . $document->judul . '".');
     }
 
     /**
@@ -515,12 +556,12 @@ class AdminDocumentController extends Controller
     public function revokeBebasPustaka(RepositoryDocument $document)
     {
         $document->update([
-            'bebas_pustaka_diizinkan'    => false,
+            'bebas_pustaka_diizinkan' => false,
             'bebas_pustaka_diizinkan_by' => null,
             'bebas_pustaka_diizinkan_at' => null,
         ]);
 
-        return back()->with('status', 'Izin download Kartu Bebas Pustaka berhasil dicabut untuk "'.$document->judul.'".');
+        return back()->with('status', 'Izin download Kartu Bebas Pustaka berhasil dicabut untuk "' . $document->judul . '".');
     }
 
     /* ─────────────────────────────────────────
@@ -534,9 +575,9 @@ class AdminDocumentController extends Controller
 
         return match ($kategori) {
             'skripsi' => array_merge(['NIM'], $shared, ['Dosen Pembimbing']),
-            'magang'  => array_merge(['NIM'], $shared, ['Tempat Magang', 'Dosen Pembimbing']),
-            'pkm'     => array_merge(['NIDN'], $shared, ['Detail']),
-            default   => array_merge(['NIDN'], $shared, ['Detail']), // penelitian
+            'magang' => array_merge(['NIM'], $shared, ['Tempat Magang', 'Dosen Pembimbing']),
+            'pkm' => array_merge(['NIDN'], $shared, ['Detail']),
+            default => array_merge(['NIDN'], $shared, ['Detail']), // penelitian
         };
     }
 
@@ -547,7 +588,7 @@ class AdminDocumentController extends Controller
     {
         $kategori = $request->query('kategori', 'skripsi');
         $validKategori = ['skripsi', 'magang', 'pkm', 'penelitian'];
-        if (! in_array($kategori, $validKategori, true)) {
+        if (!in_array($kategori, $validKategori, true)) {
             $kategori = 'skripsi';
         }
 
@@ -563,17 +604,17 @@ class AdminDocumentController extends Controller
     {
         $request->validate([
             'kategori' => ['required', 'in:skripsi,magang,pkm,penelitian'],
-            'file'     => ['required', 'file', 'mimes:xlsx,csv', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:xlsx,csv', 'max:10240'],
         ], [
             'file.required' => 'File wajib dipilih.',
-            'file.mimes'    => 'File harus berformat .xlsx atau .csv.',
-            'file.max'      => 'Ukuran file maksimal 10 MB.',
+            'file.mimes' => 'File harus berformat .xlsx atau .csv.',
+            'file.max' => 'Ukuran file maksimal 10 MB.',
         ]);
 
-        $kategori  = $request->kategori;
-        $uploaded  = $request->file('file');
+        $kategori = $request->kategori;
+        $uploaded = $request->file('file');
         $extension = strtolower($uploaded->getClientOriginalExtension());
-        $filePath  = $uploaded->getRealPath();
+        $filePath = $uploaded->getRealPath();
 
         $importer = new RepositoryDocumentImport($kategori, $uploaded->getClientOriginalName());
 
@@ -586,8 +627,8 @@ class AdminDocumentController extends Controller
         }
 
         return back()->with([
-            'import_success'  => $importer->successCount,
-            'import_errors'   => $importer->errorRows,
+            'import_success' => $importer->successCount,
+            'import_errors' => $importer->errorRows,
             'import_kategori' => $kategori,
         ]);
     }
@@ -599,39 +640,60 @@ class AdminDocumentController extends Controller
     public function downloadTemplate(string $kategori)
     {
         $validKategori = ['skripsi', 'magang', 'pkm', 'penelitian'];
-        abort_if(! in_array($kategori, $validKategori, true), 404);
+        abort_if(!in_array($kategori, $validKategori, true), 404);
 
-        $headers  = $this->templateHeaders($kategori);
+        $headers = $this->templateHeaders($kategori);
         $filename = 'template_import_' . $kategori . '.csv';
 
         $example = [];
         switch ($kategori) {
             case 'skripsi':
                 $example = [
-                    '12345678', 'Budi Santoso', 'budi@example.com',
-                    'Judul Skripsi Contoh', date('Y'), 'Abstrak singkat tentang penelitian ini.',
-                    'Teknik Informatika', 'Dr. Ahmad Fauzi',
+                    '12345678',
+                    'Budi Santoso',
+                    'budi@example.com',
+                    'Judul Skripsi Contoh',
+                    date('Y'),
+                    'Abstrak singkat tentang penelitian ini.',
+                    'Teknik Informatika',
+                    'Dr. Ahmad Fauzi',
                 ];
                 break;
             case 'magang':
                 $example = [
-                    '12345678', 'Siti Rahayu', 'siti@example.com',
-                    'Laporan Magang di Perusahaan X', date('Y'), 'Abstrak singkat laporan magang.',
-                    'Sistem Informasi', 'PT. Karya Abadi', 'Dr. Budi Santoso',
+                    '12345678',
+                    'Siti Rahayu',
+                    'siti@example.com',
+                    'Laporan Magang di Perusahaan X',
+                    date('Y'),
+                    'Abstrak singkat laporan magang.',
+                    'Sistem Informasi',
+                    'PT. Karya Abadi',
+                    'Dr. Budi Santoso',
                 ];
                 break;
             case 'pkm':
                 $example = [
-                    '0123456789', 'Dr. Ahmad Fauzi', 'ahmad@kampus.ac.id',
-                    'Judul PKM Contoh', date('Y'), 'Abstrak PKM singkat.',
-                    'Teknik Informatika', 'Detail tambahan tentang PKM ini.',
+                    '0123456789',
+                    'Dr. Ahmad Fauzi',
+                    'ahmad@kampus.ac.id',
+                    'Judul PKM Contoh',
+                    date('Y'),
+                    'Abstrak PKM singkat.',
+                    'Teknik Informatika',
+                    'Detail tambahan tentang PKM ini.',
                 ];
                 break;
             default: // penelitian
                 $example = [
-                    '0123456789', 'Prof. Dr. Sari Dewi', 'sari@kampus.ac.id',
-                    'Judul Penelitian Contoh', date('Y'), 'Abstrak penelitian dosen.',
-                    'Matematika', 'Detail tambahan penelitian.',
+                    '0123456789',
+                    'Prof. Dr. Sari Dewi',
+                    'sari@kampus.ac.id',
+                    'Judul Penelitian Contoh',
+                    date('Y'),
+                    'Abstrak penelitian dosen.',
+                    'Matematika',
+                    'Detail tambahan penelitian.',
                 ];
                 break;
         }
@@ -646,7 +708,7 @@ class AdminDocumentController extends Controller
             fputcsv($handle, $example, ',', '"');
             fclose($handle);
         }, $filename, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }

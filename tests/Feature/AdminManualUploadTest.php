@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 class AdminManualUploadTest extends TestCase
@@ -98,6 +99,33 @@ class AdminManualUploadTest extends TestCase
         Storage::disk('local')->assertExists($document->file_project);
     }
 
+    public function test_admin_manual_upload_falls_back_to_public_storage_when_private_disk_is_unavailable(): void
+    {
+        $pdfFile = UploadedFile::fake()->create('skripsi.pdf', 200, 'application/pdf');
+
+        $localDisk = Mockery::mock();
+        $localDisk->shouldReceive('putFileAs')->andThrow(new \RuntimeException('disk unavailable'));
+
+        $publicDisk = Mockery::mock();
+        $publicDisk->shouldReceive('putFileAs')->andReturn('repository-documents/skripsi.pdf');
+
+        Storage::shouldReceive('disk')->with('local')->andReturn($localDisk);
+        Storage::shouldReceive('disk')->with('public')->andReturn($publicDisk);
+
+        $response = $this->actingAs($this->admin)->post(route('admin.documents.store'), [
+            'kategori' => 'skripsi',
+            'nama' => 'Fallback User',
+            'nim' => '2024000001',
+            'program_studi_id' => $this->prodi->id,
+            'tahun' => '2026',
+            'judul' => 'Fallback Upload',
+            'file_dokumen' => $pdfFile,
+        ]);
+
+        $response->assertRedirect(route('admin.documents.index', ['status' => 'terverifikasi']));
+        $this->assertDatabaseHas('repository_documents', ['judul' => 'Fallback Upload']);
+    }
+
     public function test_admin_can_manually_upload_penelitian_dosen_with_pdf_and_rar_project(): void
     {
         $pdfFile = UploadedFile::fake()->create('penelitian.pdf', 300, 'application/pdf');
@@ -168,13 +196,13 @@ class AdminManualUploadTest extends TestCase
         $pdfFile = UploadedFile::fake()->create('skripsi_catalog.pdf', 200, 'application/pdf');
 
         $this->actingAs($this->admin)->post(route('admin.documents.store'), [
-            'kategori'        => 'skripsi',
-            'nama'            => 'Andi Catalog Test',
-            'nim'             => '9999999999',
-            'program_studi_id'=> $this->prodi->id,
-            'tahun'           => '2025',
-            'judul'           => 'Judul Skripsi Andi Unik 99999',
-            'file_dokumen'    => $pdfFile,
+            'kategori' => 'skripsi',
+            'nama' => 'Andi Catalog Test',
+            'nim' => '9999999999',
+            'program_studi_id' => $this->prodi->id,
+            'tahun' => '2025',
+            'judul' => 'Judul Skripsi Andi Unik 99999',
+            'file_dokumen' => $pdfFile,
         ])->assertRedirect(route('admin.documents.index', ['status' => 'terverifikasi']));
 
         // Verify document is in DB with correct status
