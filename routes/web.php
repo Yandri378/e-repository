@@ -131,11 +131,13 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/verifikasi', [AdminDocumentController::class, 'pending'])->name('pending');
         Route::get('/', [AdminDocumentController::class, 'index'])->name('index');
         Route::get('/create', [AdminDocumentController::class, 'create'])->name('create');
-        Route::get('/store', fn () => redirect()->route('admin.documents.create', request()->only('kategori')));
+        Route::get('/store', fn() => redirect()->route('admin.documents.create', request()->only('kategori')));
         Route::post('/store', [AdminDocumentController::class, 'store'])->name('store');
         Route::get('/import', [AdminDocumentController::class, 'showImport'])->name('import');
         Route::post('/import', [AdminDocumentController::class, 'import'])->name('import.store');
         Route::get('/import/template/{kategori}', [AdminDocumentController::class, 'downloadTemplate'])->name('import.template');
+        Route::get('/import/template-excel/{kategori}', [AdminDocumentController::class, 'downloadTemplateExcel'])->name('import.template-excel');
+        Route::post('/import/zip', [AdminDocumentController::class, 'importZip'])->name('import.zip');
         Route::patch('/verify-all', [AdminDocumentController::class, 'verifyAll'])->name('verify-all');
         Route::get('/{document}/download', [AdminDocumentController::class, 'download'])->name('download');
         Route::patch('/{document}/status', [AdminDocumentController::class, 'updateStatus'])->name('status');

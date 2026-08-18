@@ -23,6 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (TokenMismatchException $e, Request $request) {
+            if ($request->is('login')) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
+
             return redirect()
                 ->route('login')
                 ->withInput($request->except(['_token', 'password', 'password_confirmation']))

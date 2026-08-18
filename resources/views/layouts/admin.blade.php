@@ -23,7 +23,7 @@
                 </svg>
             </button>
             <div class="mobile-brand">
-                <img src="{{ asset('assets/metamedia.png') }}" alt="Logo Universitas Metamedia">
+                <img src="{{ asset('assets/metamedia.png') }}" alt="Logo Universitas Metamedia" style="background: transparent;">
                 <span>Admin Repository</span>
             </div>
             <div style="width: 24px;"></div>
@@ -34,7 +34,7 @@
 
         <aside class="admin-sidebar" id="admin-sidebar">
             <a href="{{ route('admin.dashboard') }}" class="admin-brand">
-                <img src="{{ asset('assets/metamedia.png') }}" alt="Logo Universitas Metamedia">
+                <img src="{{ asset('assets/metamedia.png') }}" alt="Logo Universitas Metamedia" style="background: transparent;">
                 <span>Admin Repository</span>
             </a>
 

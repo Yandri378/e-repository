@@ -574,10 +574,10 @@ class AdminDocumentController extends Controller
         $shared = ['Nama', 'Email', 'Judul', 'Tahun', 'Abstrak', 'Program Studi'];
 
         return match ($kategori) {
-            'skripsi' => array_merge(['NIM'], $shared, ['Dosen Pembimbing']),
-            'magang' => array_merge(['NIM'], $shared, ['Tempat Magang', 'Dosen Pembimbing']),
-            'pkm' => array_merge(['NIDN'], $shared, ['Detail']),
-            default => array_merge(['NIDN'], $shared, ['Detail']), // penelitian
+            'skripsi' => array_merge(['NIM'], $shared, ['Dosen Pembimbing', 'File Dokumen']),
+            'magang' => array_merge(['NIM'], $shared, ['Tempat Magang', 'Dosen Pembimbing', 'File Dokumen']),
+            'pkm' => array_merge(['NIDN'], $shared, ['Detail', 'File Dokumen']),
+            default => array_merge(['NIDN'], $shared, ['Detail', 'File Dokumen']), // penelitian
         };
     }
 
@@ -598,17 +598,20 @@ class AdminDocumentController extends Controller
     }
 
     /**
-     * Proses file Excel/CSV yang diupload — tanpa library pihak ketiga.
+     * Proses file Excel/CSV yang diupload — opsional beserta file ZIP berisi lampiran PDF.
      */
     public function import(Request $request)
     {
         $request->validate([
             'kategori' => ['required', 'in:skripsi,magang,pkm,penelitian'],
             'file' => ['required', 'file', 'mimes:xlsx,csv', 'max:10240'],
+            'file_zip' => ['nullable', 'file', 'mimes:zip', 'max:819200'], // max 800 MB
         ], [
-            'file.required' => 'File wajib dipilih.',
+            'file.required' => 'File Excel/CSV wajib dipilih.',
             'file.mimes' => 'File harus berformat .xlsx atau .csv.',
-            'file.max' => 'Ukuran file maksimal 10 MB.',
+            'file.max' => 'Ukuran file Excel maksimal 10 MB.',
+            'file_zip.mimes' => 'File lampiran harus berformat .zip.',
+            'file_zip.max' => 'Ukuran file ZIP maksimal 800 MB.',
         ]);
 
         $kategori = $request->kategori;
@@ -616,14 +619,41 @@ class AdminDocumentController extends Controller
         $extension = strtolower($uploaded->getClientOriginalExtension());
         $filePath = $uploaded->getRealPath();
 
+        $zipExtractDir = null;
+        if ($request->hasFile('file_zip')) {
+            try {
+                $zipFile = $request->file('file_zip');
+                $zip = new \ZipArchive();
+                if ($zip->open($zipFile->getRealPath()) === true) {
+                    $zipExtractDir = storage_path('app/temp_excel_zip_' . Str::random(16));
+                    $zip->extractTo($zipExtractDir);
+                    $zip->close();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Gagal mengekstrak ZIP lampiran pada Import Excel: ' . $e->getMessage());
+            }
+        }
+
         $importer = new RepositoryDocumentImport($kategori, $uploaded->getClientOriginalName());
+
+        if ($zipExtractDir) {
+            $importer->setZipExtractPath($zipExtractDir);
+        }
 
         try {
             $importer->importFromFile($filePath, $extension);
         } catch (\Throwable $e) {
+            if ($zipExtractDir && is_dir($zipExtractDir)) {
+                $this->deleteDirectory($zipExtractDir);
+            }
+
             return back()
                 ->withInput()
                 ->with('import_error', 'Gagal memproses file: ' . $e->getMessage());
+        }
+
+        if ($zipExtractDir && is_dir($zipExtractDir)) {
+            $this->deleteDirectory($zipExtractDir);
         }
 
         return back()->with([
@@ -657,6 +687,7 @@ class AdminDocumentController extends Controller
                     'Abstrak singkat tentang penelitian ini.',
                     'Teknik Informatika',
                     'Dr. Ahmad Fauzi',
+                    'budi_skripsi.pdf',
                 ];
                 break;
             case 'magang':
@@ -670,6 +701,7 @@ class AdminDocumentController extends Controller
                     'Sistem Informasi',
                     'PT. Karya Abadi',
                     'Dr. Budi Santoso',
+                    'siti_magang.pdf',
                 ];
                 break;
             case 'pkm':
@@ -682,6 +714,7 @@ class AdminDocumentController extends Controller
                     'Abstrak PKM singkat.',
                     'Teknik Informatika',
                     'Detail tambahan tentang PKM ini.',
+                    'pkm_ahmad.pdf',
                 ];
                 break;
             default: // penelitian
@@ -694,6 +727,7 @@ class AdminDocumentController extends Controller
                     'Abstrak penelitian dosen.',
                     'Matematika',
                     'Detail tambahan penelitian.',
+                    'penelitian_sari.pdf',
                 ];
                 break;
         }
@@ -709,6 +743,366 @@ class AdminDocumentController extends Controller
             fclose($handle);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Ekstrak file arsip (.zip, .rar, .7z, dll) ke direktori tujuan.
+     */
+    private function extractArchiveFile(string $archivePath, string $destinationDir): bool
+    {
+        if (!file_exists($archivePath)) {
+            return false;
+        }
+
+        if (!is_dir($destinationDir)) {
+            @mkdir($destinationDir, 0777, true);
+        }
+
+        $ext = strtolower(pathinfo($archivePath, PATHINFO_EXTENSION));
+
+        if ($ext === 'zip') {
+            try {
+                $zip = new \ZipArchive();
+                if ($zip->open($archivePath) === true) {
+                    $zip->extractTo($destinationDir);
+                    $zip->close();
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                // fallback to tar.exe
+            }
+        }
+
+        // Use bsdtar (tar.exe) on Windows/Linux to extract .rar, .zip, .7z, etc.
+        $cmd = 'tar.exe -xf ' . escapeshellarg($archivePath) . ' -C ' . escapeshellarg($destinationDir) . ' 2>&1';
+        @exec($cmd, $output, $resultCode);
+
+        return is_dir($destinationDir) && count(scandir($destinationDir)) > 2;
+    }
+
+    /**
+     * Proses upload file ZIP / RAR berisi file-file PDF / DOC dokumen.
+     * Setiap file dokumen di dalam ZIP/RAR menjadi 1 record RepositoryDocument (status pending).
+     */
+    public function importZip(Request $request)
+    {
+        $request->validate([
+            'kategori' => ['required', 'in:skripsi,magang,pkm,penelitian'],
+            'file_zip' => ['required', 'file', 'mimes:zip,rar', 'extensions:zip,rar,7z', 'max:819200'], // max 800 MB
+        ], [
+            'file_zip.required' => 'File ZIP/RAR wajib dipilih.',
+            'file_zip.mimes'    => 'File harus berformat .zip atau .rar.',
+            'file_zip.max'      => 'Ukuran file ZIP/RAR maksimal 800 MB.',
+        ]);
+
+        $kategori = $request->kategori;
+        $uploaded = $request->file('file_zip');
+
+        $extractDir = storage_path('app/temp_zip_' . Str::random(16));
+        $successCount = 0;
+        $errorRows = [];
+
+        try {
+            $extractedOk = $this->extractArchiveFile($uploaded->getRealPath(), $extractDir);
+
+            if (!$extractedOk) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'message' => 'Gagal membuka file ZIP/RAR. Pastikan file tidak rusak.',
+                    ], 422);
+                }
+
+                return back()
+                    ->withInput()
+                    ->with('import_error', 'Gagal membuka file ZIP/RAR. Pastikan file tidak rusak.');
+            }
+
+            // Unpack any nested archive files (.rar, .zip, .7z) found inside the extracted directory
+            for ($pass = 0; $pass < 3; $pass++) {
+                $nestedArchives = [];
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($extractDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+                );
+                foreach ($iterator as $file) {
+                    if (!$file->isFile()) continue;
+                    $fn = $file->getFilename();
+                    $pn = $file->getPathname();
+                    if (str_starts_with($fn, '._') || str_contains($pn, '__MACOSX')) continue;
+
+                    $ext = strtolower(pathinfo($fn, PATHINFO_EXTENSION));
+                    if (in_array($ext, ['rar', 'zip', '7z', 'tar', 'gz'], true)) {
+                        $nestedArchives[] = $file->getRealPath();
+                    }
+                }
+
+                if (empty($nestedArchives)) {
+                    break;
+                }
+
+                foreach ($nestedArchives as $archivePath) {
+                    $subDir = dirname($archivePath) . '/unpacked_' . Str::random(8);
+                    $this->extractArchiveFile($archivePath, $subDir);
+                    @unlink($archivePath);
+                }
+            }
+
+            // Scan all document files recursively
+            $docFiles = [];
+            $allFoundFiles = [];
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($extractDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+            );
+            foreach ($iterator as $file) {
+                if (!$file->isFile()) {
+                    continue;
+                }
+
+                $filename = $file->getFilename();
+                $pathname = $file->getPathname();
+
+                // Skip macOS AppleDouble hidden files (._filename) and __MACOSX directories
+                if (str_starts_with($filename, '._') || str_contains($pathname, '__MACOSX')) {
+                    continue;
+                }
+
+                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                $allFoundFiles[] = $filename;
+
+                if (in_array($ext, ['pdf', 'doc', 'docx', 'rtf', 'odt', 'txt'], true)) {
+                    $docFiles[] = [
+                        'path' => $file->getRealPath(),
+                        'filename' => $filename,
+                        'extension' => $ext,
+                    ];
+                }
+            }
+
+            if (empty($docFiles)) {
+                $fileHint = !empty($allFoundFiles)
+                    ? ' Berkas yang ditemukan di dalam arsip: ' . implode(', ', array_slice($allFoundFiles, 0, 5)) . '.'
+                    : ' Berkas arsip kosong atau tidak berisi file.';
+
+                $errMsg = 'Tidak ditemukan berkas dokumen (.pdf, .doc, .docx, .rtf, .odt, .txt) di dalam file ZIP/RAR.' . $fileHint;
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'message' => $errMsg,
+                    ], 422);
+                }
+
+                return back()
+                    ->withInput()
+                    ->with('import_error', $errMsg);
+            }
+
+            foreach ($docFiles as $index => $item) {
+                $rowNum = $index + 1;
+                $pdfPath = $item['path'];
+                $originalName = $item['filename'];
+                $ext = $item['extension'];
+
+                try {
+                    // Parse basic info from filename (remove extension)
+                    $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
+
+                    $mimeType = match ($ext) {
+                        'pdf' => 'application/pdf',
+                        'doc' => 'application/msword',
+                        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'rtf' => 'application/rtf',
+                        'odt' => 'application/vnd.oasis.opendocument.text',
+                        'txt' => 'text/plain',
+                        default => 'application/octet-stream',
+                    };
+
+                    // Store the document file
+                    $storedPath = null;
+                    $uploadedFile = new \Illuminate\Http\UploadedFile(
+                        $pdfPath,
+                        $originalName,
+                        $mimeType,
+                        null,
+                        true
+                    );
+                    $storedPath = $this->storeUploadedFile($uploadedFile, 'repository-documents');
+
+                    // Count PDF pages if PDF
+                    $pdfPageCount = null;
+                    if ($ext === 'pdf') {
+                        try {
+                            $pdfPageCount = $this->countPdfPages($pdfPath);
+                        } catch (\Throwable $e) {
+                            // ignore
+                        }
+                    }
+
+                    RepositoryDocument::create([
+                        'user_id'          => Auth::id(),
+                        'input_by'         => Auth::id(),
+                        'kategori'         => $kategori,
+                        'jenis_input'      => 'upload',
+                        'nama'             => $nameWithoutExt,
+                        'judul'            => $nameWithoutExt,
+                        'tahun'            => date('Y'),
+                        'bulan'            => now()->month,
+                        'file_dokumen'     => $storedPath,
+                        'pdf_page_count'   => $pdfPageCount,
+                        'status'           => 'pending',
+                        'tanggal_upload'   => now(),
+                        'submission_token' => Str::random(48),
+                    ]);
+
+                    $successCount++;
+                } catch (\Throwable $e) {
+                    $errorRows[] = [
+                        'row'    => $rowNum,
+                        'nama'   => $originalName,
+                        'judul'  => $originalName,
+                        'errors' => [$e->getMessage()],
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            // Clean up temp dir — errors suppressed
+            try {
+                if (is_dir($extractDir)) {
+                    $this->deleteDirectory($extractDir);
+                }
+            } catch (\Throwable $e) {
+                // Silently ignore cleanup errors
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => 'Gagal memproses file ZIP: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()
+                ->withInput()
+                ->with('import_error', 'Gagal memproses file ZIP: ' . $e->getMessage());
+        }
+
+        // Clean up temp dir — errors suppressed, cleanup failures must not affect the response
+        try {
+            if (is_dir($extractDir)) {
+                $this->deleteDirectory($extractDir);
+            }
+        } catch (\Throwable $e) {
+            // Silently ignore cleanup errors (e.g. Windows file lock)
+        }
+
+        if ($request->ajax()) {
+            if ($successCount === 0 && count($errorRows) > 0) {
+                $firstErr = $errorRows[0]['errors'][0] ?? 'Gagal memproses file dokumen.';
+                return response()->json([
+                    'message' => 'Gagal memproses file ZIP: ' . $firstErr,
+                    'errors' => $errorRows,
+                ], 422);
+            }
+
+            $message = 'Upload ZIP berhasil! ' . $successCount . ' file dokumen berhasil diproses sebagai data ' . strtoupper($kategori) . '.';
+            if (count($errorRows) > 0) {
+                $message .= ' (' . count($errorRows) . ' file gagal diproses).';
+            }
+
+            return response()->json([
+                'message' => $message,
+                'success_count' => $successCount,
+                'error_count' => count($errorRows),
+                'kategori' => $kategori,
+            ]);
+        }
+
+        return back()->with([
+            'import_success'  => $successCount,
+            'import_errors'   => $errorRows,
+            'import_kategori' => $kategori,
+            'status'          => 'Upload file ZIP berhasil diproses (' . $successCount . ' berkas).',
+        ]);
+    }
+
+    /**
+     * Hapus direktori secara rekursif.
+     */
+    private function deleteDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        try {
+            $items = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+
+            foreach ($items as $item) {
+                if ($item->isDir()) {
+                    @rmdir($item->getRealPath());
+                } else {
+                    // On Windows, files may be temporarily locked by antivirus/OS.
+                    // Retry up to 3 times with a short delay before giving up.
+                    $path = $item->getRealPath();
+                    $deleted = false;
+                    for ($i = 0; $i < 3; $i++) {
+                        if (@unlink($path)) {
+                            $deleted = true;
+                            break;
+                        }
+                        // Brief pause to allow OS to release the file lock
+                        usleep(50000); // 50ms
+                    }
+                    // If still locked, skip silently — OS will clean temp files eventually
+                }
+            }
+        } catch (\Throwable $e) {
+            // Directory cleanup failed — silently ignore, temp files will be cleaned by OS
+        }
+
+        @rmdir($dir);
+    }
+
+    /**
+     * Download template Excel (.xls) sesuai kategori.
+     * Menggunakan format HTML Spreadsheet yang kompatibel dengan Microsoft Excel.
+     */
+    public function downloadTemplateExcel(string $kategori)
+    {
+        $validKategori = ['skripsi', 'magang', 'pkm', 'penelitian'];
+        abort_if(!in_array($kategori, $validKategori, true), 404);
+
+        $headers = $this->templateHeaders($kategori);
+        $filename = 'template_import_' . $kategori . '.xls';
+
+        $example = match ($kategori) {
+            'skripsi' => ['12345678', 'Budi Santoso', 'budi@example.com', 'Judul Skripsi Contoh', date('Y'), 'Abstrak singkat tentang penelitian ini.', 'Teknik Informatika', 'Dr. Ahmad Fauzi', 'budi_skripsi.pdf'],
+            'magang'  => ['12345678', 'Siti Rahayu', 'siti@example.com', 'Laporan Magang di Perusahaan X', date('Y'), 'Abstrak singkat laporan magang.', 'Sistem Informasi', 'PT. Karya Abadi', 'Dr. Budi Santoso', 'siti_magang.pdf'],
+            'pkm'     => ['0123456789', 'Dr. Ahmad Fauzi', 'ahmad@kampus.ac.id', 'Judul PKM Contoh', date('Y'), 'Abstrak PKM singkat.', 'Teknik Informatika', 'Detail tambahan tentang PKM ini.', 'pkm_ahmad.pdf'],
+            default   => ['0123456789', 'Prof. Dr. Sari Dewi', 'sari@kampus.ac.id', 'Judul Penelitian Contoh', date('Y'), 'Abstrak penelitian dosen.', 'Matematika', 'Detail tambahan penelitian.', 'penelitian_sari.pdf'],
+        };
+
+        $example = array_slice(array_pad($example, count($headers), ''), 0, count($headers));
+
+        $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        $html .= '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Template ' . ucfirst($kategori) . '</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
+        $html .= '<body><table border="1">';
+        $html .= '<tr style="background-color: #2563eb; color: #ffffff; font-weight: bold;">';
+        foreach ($headers as $h) {
+            $html .= '<th style="padding: 5px;">' . htmlspecialchars($h) . '</th>';
+        }
+        $html .= '</tr>';
+        $html .= '<tr>';
+        foreach ($example as $val) {
+            $html .= '<td style="padding: 5px;">' . htmlspecialchars($val) . '</td>';
+        }
+        $html .= '</tr>';
+        $html .= '</table></body></html>';
+
+        return response($html, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }

@@ -131,6 +131,147 @@ class RepositoryDocumentImport
         };
     }
 
+    public ?string $zipExtractPath = null;
+    private array $pdfFileIndex = [];
+
+    public function setZipExtractPath(?string $path): self
+    {
+        $this->zipExtractPath = $path;
+        $this->indexPdfFilesFromZip();
+        return $this;
+    }
+
+    private function indexPdfFilesFromZip(): void
+    {
+        if (!$this->zipExtractPath || !is_dir($this->zipExtractPath)) {
+            return;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->zipExtractPath, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            $filename = $file->getFilename();
+            $pathname = $file->getPathname();
+
+            if (str_starts_with($filename, '._') || str_contains($pathname, '__MACOSX')) {
+                continue;
+            }
+
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (in_array($ext, ['pdf', 'doc', 'docx', 'rtf', 'odt', 'txt'], true)) {
+                $lowerName = strtolower($filename);
+                $this->pdfFileIndex[$lowerName] = $file->getRealPath();
+            }
+        }
+    }
+
+    private function findPdfForData(array $data): ?string
+    {
+        if (empty($this->pdfFileIndex)) {
+            return null;
+        }
+
+        // 1. Match explicit 'file_dokumen' column value
+        $explicitName = strtolower(trim($data['file_dokumen'] ?? ''));
+        if ($explicitName !== '') {
+            if (!str_ends_with($explicitName, '.pdf')) {
+                $explicitName .= '.pdf';
+            }
+            if (isset($this->pdfFileIndex[$explicitName])) {
+                return $this->pdfFileIndex[$explicitName];
+            }
+        }
+
+        // 2. Match by NIM or NIDN
+        $identity = strtolower(trim($data['nim'] ?? $data['nidn'] ?? ''));
+        if ($identity !== '') {
+            foreach ($this->pdfFileIndex as $filename => $fullPath) {
+                if (str_contains($filename, $identity)) {
+                    return $fullPath;
+                }
+            }
+        }
+
+        // 3. Match by Name
+        $nama = strtolower(trim($data['nama'] ?? ''));
+        if ($nama !== '') {
+            $slugNama = str_replace(' ', '', $nama);
+            foreach ($this->pdfFileIndex as $filename => $fullPath) {
+                $cleanFilename = str_replace(['_', '-'], '', pathinfo($filename, PATHINFO_FILENAME));
+                if (str_contains($cleanFilename, $slugNama) || str_contains($slugNama, $cleanFilename)) {
+                    return $fullPath;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function storePdfFromZip(string $pdfPath): ?array
+    {
+        try {
+            if (!file_exists($pdfPath)) {
+                return null;
+            }
+
+            $originalName = basename($pdfPath);
+            $uploadedFile = new \Illuminate\Http\UploadedFile(
+                $pdfPath,
+                $originalName,
+                'application/pdf',
+                null,
+                true
+            );
+
+            // Store to storage disk
+            $storedPath = null;
+            foreach (['local', 'public'] as $disk) {
+                try {
+                    $path = $uploadedFile->store('repository-documents', $disk);
+                    if ($path) {
+                        $storedPath = $path;
+                        break;
+                    }
+                } catch (\Throwable $e) {
+                    // try next disk
+                }
+            }
+
+            if (!$storedPath) {
+                return null;
+            }
+
+            // Count PDF pages
+            $pageCount = null;
+            try {
+                $handle = @fopen($pdfPath, 'rb');
+                if ($handle) {
+                    $chunk = fread($handle, 204800);
+                    fclose($handle);
+                    if ($chunk !== false) {
+                        preg_match_all('/\/Type\s*\/Page[^s]/', $chunk, $matches);
+                        $pageCount = count($matches[0]) ?: null;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
+            return [
+                'file_dokumen' => $storedPath,
+                'pdf_page_count' => $pageCount,
+            ];
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     private function normalizeHeader(string $raw): string
     {
         $h = strtolower(trim(preg_replace('/\s+/', ' ', $raw)));
@@ -150,6 +291,7 @@ class RepositoryDocumentImport
             'program_studi' => ['program studi', 'program_studi', 'prodi', 'jurusan', 'departemen', 'fakultas', 'bidang studi'],
             'tempat_magang' => ['tempat magang', 'tempat_magang', 'nama perusahaan', 'perusahaan', 'instansi', 'lembaga', 'organisasi', 'nama instansi', 'tempat praktik', 'tempat pkl', 'tempat kerja'],
             'dosen' => ['dosen pembimbing', 'dosen_pembimbing', 'pembimbing', 'pembimbing i', 'pembimbing 1', 'pembimbing ii', 'pembimbing 2', 'supervisor', 'nama pembimbing'],
+            'file_dokumen' => ['file dokumen', 'file_dokumen', 'file pdf', 'pdf', 'nama file', 'berkas', 'file', 'file_pdf', 'dokumen', 'file_name'],
             'alamat' => ['alamat perusahaan', 'alamat instansi', 'alamat'],
             'telepon' => ['no telp', 'no telepon', 'no hp', 'telepon', 'telpon', 'telephone', 'phone', 'handphone', 'hp'],
             'detail' => ['detail', 'keterangan', 'catatan', 'note', 'notes'],
@@ -219,29 +361,43 @@ class RepositoryDocumentImport
         $kategori = $this->resolveKategori($data);
         $tahun = $this->resolveYear($data['tahun'] ?? null);
 
+        // Process PDF attachment from ZIP if available
+        $pdfData = [];
+        if ($this->zipExtractPath) {
+            $matchedPdf = $this->findPdfForData($data);
+            if ($matchedPdf) {
+                $storedPdfInfo = $this->storePdfFromZip($matchedPdf);
+                if ($storedPdfInfo) {
+                    $pdfData = $storedPdfInfo;
+                }
+            }
+        }
+
         try {
+            $recordData = array_merge([
+                'kategori' => $kategori,
+                'jenis_input' => 'admin_import',
+                'input_by' => Auth::id(),
+                'program_studi_id' => $this->resolveProgramStudiId($data['program_studi'] ?? ''),
+                'dosen_pembimbing_id' => $this->resolveDosenId($data['dosen'] ?? ''),
+                'nama' => $nama,
+                'nim' => ($data['nim'] ?? '') ?: null,
+                'nidn' => ($data['nidn'] ?? '') ?: null,
+                'email' => ($data['email'] ?? '') ?: null,
+                'judul' => $judul,
+                'tahun' => $tahun,
+                'abstrak' => ($data['abstrak'] ?? '') ?: null,
+                'detail' => ($data['detail'] ?? '') ?: null,
+                'tempat_magang' => ($data['tempat_magang'] ?? '') ?: null,
+                'status' => 'terverifikasi',
+                'tanggal_upload' => now(),
+                'verified_by' => Auth::id(),
+                'verified_at' => now(),
+            ], $pdfData);
+
             RepositoryDocument::updateOrCreate(
                 $this->uniqueKey($kategori, $data, $judul),
-                [
-                    'kategori' => $kategori,
-                    'jenis_input' => 'admin_import',
-                    'input_by' => Auth::id(),
-                    'program_studi_id' => $this->resolveProgramStudiId($data['program_studi'] ?? ''),
-                    'dosen_pembimbing_id' => $this->resolveDosenId($data['dosen'] ?? ''),
-                    'nama' => $nama,
-                    'nim' => ($data['nim'] ?? '') ?: null,
-                    'nidn' => ($data['nidn'] ?? '') ?: null,
-                    'email' => ($data['email'] ?? '') ?: null,
-                    'judul' => $judul,
-                    'tahun' => $tahun,
-                    'abstrak' => ($data['abstrak'] ?? '') ?: null,
-                    'detail' => ($data['detail'] ?? '') ?: null,
-                    'tempat_magang' => ($data['tempat_magang'] ?? '') ?: null,
-                    'status' => 'terverifikasi',
-                    'tanggal_upload' => now(),
-                    'verified_by' => Auth::id(),
-                    'verified_at' => now(),
-                ]
+                $recordData
             );
 
             $this->successCount++;
