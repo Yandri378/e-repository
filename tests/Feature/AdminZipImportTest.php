@@ -52,8 +52,12 @@ class AdminZipImportTest extends TestCase
         $this->assertDatabaseHas('repository_documents', [
             'nama' => 'Dokumen_Skripsi_Budi',
             'kategori' => 'skripsi',
-            'status' => 'pending',
+            'status' => 'terverifikasi',
         ]);
+
+        $searchResponse = $this->get(route('repository.index', ['search' => 'Dokumen_Skripsi_Budi']));
+        $searchResponse->assertOk()
+            ->assertSee('Dokumen_Skripsi_Budi');
 
         if (file_exists($tempZipPath)) {
             unlink($tempZipPath);

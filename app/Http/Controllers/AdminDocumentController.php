@@ -949,7 +949,9 @@ class AdminDocumentController extends Controller
                         'bulan'            => now()->month,
                         'file_dokumen'     => $storedPath,
                         'pdf_page_count'   => $pdfPageCount,
-                        'status'           => 'pending',
+                        'status'           => 'terverifikasi',
+                        'verified_by'      => Auth::id(),
+                        'verified_at'      => now(),
                         'tanggal_upload'   => now(),
                         'submission_token' => Str::random(48),
                     ]);

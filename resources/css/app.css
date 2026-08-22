@@ -11,20 +11,20 @@
 }
 
 :root {
-    --ink: #062033;
+    --ink: #0f172a;
     --panel: #ffffff;
-    --panel-soft: #f1fbff;
-    --blue: #0b8fe8;
-    --blue-soft: #72d9ff;
-    --green: #32d6a6;
-    --yellow: #ffe08a;
-    --coral: #ff8f75;
-    --text: #f8fdff;
-    --muted: #d4ecf8;
-    --line: rgba(125, 211, 252, 0.36);
-    --glass: rgba(255, 255, 255, 0.13);
-    --glass-strong: rgba(255, 255, 255, 0.2);
-    --panel-gradient: linear-gradient(145deg, rgba(22, 111, 153, 0.78), rgba(12, 58, 90, 0.82));
+    --panel-soft: #f0f9ff;
+    --blue: #2563eb;
+    --blue-soft: #e0f2fe;
+    --green: #2563eb;
+    --yellow: #e0f2fe;
+    --coral: #1d4ed8;
+    --text: #ffffff;
+    --muted: #bae6fd;
+    --line: rgba(56, 189, 248, 0.25);
+    --glass: rgba(255, 255, 255, 0.12);
+    --glass-strong: rgba(255, 255, 255, 0.22);
+    --panel-gradient: linear-gradient(145deg, rgba(30, 64, 175, 0.9), rgba(15, 23, 42, 0.95));
 }
 
 * {
@@ -42,10 +42,10 @@ body {
     min-height: 100vh;
     color: var(--text);
     background:
-        radial-gradient(circle at 14% 8%, rgba(114, 217, 255, 0.5), transparent 27rem),
-        radial-gradient(circle at 88% 16%, rgba(255, 224, 138, 0.28), transparent 24rem),
-        radial-gradient(circle at 42% 92%, rgba(50, 214, 166, 0.22), transparent 28rem),
-        linear-gradient(135deg, #0c5687 0%, #0f7ab3 42%, #0d405f 100%);
+        radial-gradient(circle at 14% 8%, rgba(56, 189, 248, 0.25), transparent 27rem),
+        radial-gradient(circle at 88% 16%, rgba(37, 99, 235, 0.20), transparent 24rem),
+        radial-gradient(circle at 42% 92%, rgba(2, 132, 199, 0.18), transparent 28rem),
+        linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0284c7 100%);
     font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -1564,9 +1564,9 @@ td {
     display: flex;
     min-height: 100vh;
     background:
-        radial-gradient(circle at 75% 10%, rgba(255, 209, 102, 0.16), transparent 26rem),
-        linear-gradient(135deg, #eaf8ff 0%, #f7fbff 48%, #e9fff6 100%);
-    color: #092033;
+        radial-gradient(circle at 75% 10%, rgba(56, 189, 248, 0.12), transparent 26rem),
+        linear-gradient(135deg, #f8fafc 0%, #f0f9ff 50%, #eff6ff 100%);
+    color: #0f172a;
 }
 
 .admin-sidebar {
@@ -1582,9 +1582,9 @@ td {
     justify-content: space-between;
     gap: 1.2rem;
     padding: 1.25rem 1rem;
-    color: #eaf8ff;
-    background: linear-gradient(180deg, #07365b 0%, #065f8f 58%, #088c95 100%);
-    box-shadow: 6px 0 25px rgba(6, 46, 76, 0.2);
+    color: #ffffff;
+    background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
+    box-shadow: 6px 0 25px rgba(15, 23, 42, 0.25);
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
@@ -1647,15 +1647,16 @@ td {
 
 .admin-menu a:hover,
 .admin-menu a.active {
-    color: #032033;
-    background: linear-gradient(135deg, var(--yellow), #f8fbff);
+    color: #1e3a8a;
+    background: #ffffff;
+    border-color: #ffffff;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .admin-menu a:hover svg,
 .admin-menu a.active svg {
     opacity: 1;
-    color: #032033;
+    color: #1e3a8a;
     transform: translateX(2px);
 }
 
@@ -1671,7 +1672,7 @@ td {
     align-items: center;
     gap: 0.5rem;
     font-weight: 800;
-    color: #eaf8ff;
+    color: #e0f2fe;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1690,7 +1691,7 @@ td {
     min-height: 40px;
     border: 0;
     border-radius: 8px;
-    color: #032033;
+    color: #1e3a8a;
     background: #ffffff;
     cursor: pointer;
     font-weight: 900;
@@ -1698,7 +1699,8 @@ td {
 }
 
 .admin-logout button:hover {
-    background: #ffe08a;
+    background: #e0f2fe;
+    color: #1d4ed8;
     transform: translateY(-1px);
 }
 
@@ -1710,14 +1712,14 @@ td {
 }
 
 .admin-main .page-hero {
-    color: #f7fcff;
+    color: #ffffff;
     background:
-        linear-gradient(135deg, rgba(4, 127, 210, 0.95), rgba(32, 201, 151, 0.78)),
-        linear-gradient(90deg, rgba(255, 209, 102, 0.35), transparent);
+        linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #2563eb 100%),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.25), transparent);
 }
 
 .admin-main .section {
-    color: #092033;
+    color: #0f172a;
 }
 
 .admin-main {

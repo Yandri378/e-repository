@@ -10,16 +10,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         :root{
-            --ink:#16233A;
-            --ink-soft:#2A3B57;
-            --parchment:#F6EFDE;
-            --parchment-deep:#EEE3C8;
-            --brass:#A9823C;
-            --brass-light:#C9A45C;
-            --sage:#5E7259;
-            --flag:#9B4A3F;
-            --line: rgba(22,35,58,0.16);
-            --line-light: rgba(246,239,222,0.28);
+            --ink:#0F172A;
+            --ink-soft:#1E3A8A;
+            --parchment:#FFFFFF;
+            --parchment-deep:#F0F9FF;
+            --brass:#2563EB;
+            --brass-light:#38BDF8;
+            --sage:#0284C7;
+            --flag:#1D4ED8;
+            --line: rgba(37,99,235,0.16);
+            --line-light: rgba(224,242,254,0.28);
         }
         *{ box-sizing:border-box; }
         body{

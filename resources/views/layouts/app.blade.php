@@ -20,39 +20,39 @@
     ===================================================== --}}
     <style>
         :root {
-            --ink: #161B2E;
-            --ink-soft: #4A5170;
-            --navy: #1B2A4A;
-            --navy-deep: #101830;
-            --parchment: #FBF9F5;
-            --parchment-dim: #F1ECE1;
-            --line: rgba(22, 27, 46, .09);
-            --accent: #B9822F;
-            --accent-soft: #E8CE9C;
-            --accent-ink: #5C3E12;
+            --ink: #0F172A;
+            --ink-soft: #334155;
+            --navy: #1E3A8A;
+            --navy-deep: #1E40AF;
+            --parchment: #FFFFFF;
+            --parchment-dim: #F0F9FF;
+            --line: rgba(37, 99, 235, .15);
+            --accent: #2563EB;
+            --accent-soft: #E0F2FE;
+            --accent-ink: #1D4ED8;
             --white: #ffffff;
             --radius-sm: 8px;
             --radius-md: 14px;
             --radius-lg: 20px;
-            --shadow-soft: 0 8px 24px -12px rgba(16, 24, 48, .18);
-            --shadow-pop: 0 24px 60px -20px rgba(16, 24, 48, .35);
-            --font-display: 'Fraunces', Georgia, serif;
+            --shadow-soft: 0 8px 24px -12px rgba(37, 99, 235, .18);
+            --shadow-pop: 0 24px 60px -20px rgba(37, 99, 235, .25);
+            --font-display: 'Instrument Sans', system-ui, sans-serif;
             --font-body: 'Instrument Sans', system-ui, sans-serif;
             --ease: cubic-bezier(.22, 1, .36, 1);
         }
 
         [data-theme="dark"] {
-            --ink: #EFEDE6;
-            --ink-soft: #B7BBD1;
-            --navy: #0E1730;
-            --navy-deep: #080D1C;
-            --parchment: #0D1120;
-            --parchment-dim: #141A2E;
-            --line: rgba(239, 237, 230, .10);
-            --accent: #E1B15B;
-            --accent-soft: #3A2F16;
-            --accent-ink: #F3DDA8;
-            --white: #151A2C;
+            --ink: #F8FAFC;
+            --ink-soft: #94A3B8;
+            --navy: #1E293B;
+            --navy-deep: #0F172A;
+            --parchment: #0F172A;
+            --parchment-dim: #1E293B;
+            --line: rgba(56, 189, 248, .20);
+            --accent: #38BDF8;
+            --accent-soft: #0C4A6E;
+            --accent-ink: #F0F9FF;
+            --white: #1E293B;
             --shadow-soft: 0 8px 28px -12px rgba(0, 0, 0, .55);
             --shadow-pop: 0 24px 70px -18px rgba(0, 0, 0, .7);
         }

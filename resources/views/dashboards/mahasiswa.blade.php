@@ -62,9 +62,9 @@
             <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span class="font-semibold text-slate-600 dark:text-slate-300">Kategori Populer:</span>
                 <a href="{{ route('repository.index', 'skripsi') }}" class="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 transition-colors">Skripsi / TA</a>
-                <a href="{{ route('repository.index', 'magang') }}" class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 transition-colors">Laporan Magang</a>
-                <a href="{{ route('repository.index', 'pkm') }}" class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 transition-colors">PKM</a>
-                <a href="{{ route('repository.index', 'penelitian') }}" class="rounded-full bg-purple-50 px-2.5 py-1 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/60 dark:text-purple-300 transition-colors">Penelitian Dosen</a>
+                <a href="{{ route('repository.index', 'magang') }}" class="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700 hover:bg-sky-100 dark:bg-sky-950/60 dark:text-sky-300 transition-colors">Laporan Magang</a>
+                <a href="{{ route('repository.index', 'pkm') }}" class="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 transition-colors">PKM</a>
+                <a href="{{ route('repository.index', 'penelitian') }}" class="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700 hover:bg-sky-100 dark:bg-sky-950/60 dark:text-sky-300 transition-colors">Penelitian Dosen</a>
             </div>
         </section>
 

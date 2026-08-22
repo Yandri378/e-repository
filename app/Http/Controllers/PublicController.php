@@ -31,10 +31,13 @@ class PublicController extends Controller
     public function repository(Request $request, ?string $kategori = null)
     {
         $search = trim((string) ($request->query('search') ?? $request->query('q') ?? ''));
+        $tahun  = trim((string) ($request->query('tahun') ?? ''));
+        $sort   = $request->query('sort', 'terbaru');
         $isSingleLetterSearch = strlen($search) === 1 && ctype_alpha($search);
 
         $documents = $this->publicDocuments()
             ->when($kategori, fn ($query) => $query->where('kategori', $kategori))
+            ->when($tahun !== '', fn ($query) => $query->where('tahun', $tahun))
             ->when($search !== '', function ($query) use ($search, $isSingleLetterSearch) {
                 if ($isSingleLetterSearch) {
                     $query->where('judul', 'like', $search.'%');
@@ -52,20 +55,41 @@ class PublicController extends Controller
                         ->orWhere('abstrak', 'like', $keyword)
                         ->orWhere('detail', 'like', $keyword)
                         ->orWhere('tempat_magang', 'like', $keyword)
-                        ->orWhere('tahun', 'like', $keyword);
+                        ->orWhere('tahun', 'like', $keyword)
+                        ->orWhere('file_dokumen', 'like', $keyword)
+                        ->orWhere('file_project', 'like', $keyword);
                 });
             })
-            ->when($search !== '', function ($query) use ($search, $isSingleLetterSearch) {
+            ->when($search !== '', function ($query) use ($search, $isSingleLetterSearch, $sort) {
                 if (! $isSingleLetterSearch) {
                     $query->orderByRaw('CASE WHEN LOWER(judul) LIKE LOWER(?) THEN 0 ELSE 1 END', [$search.'%']);
                 }
-
-                $query->orderByRaw('LOWER(judul) ASC');
-            }, fn ($query) => $query->latest())
+                $this->applySortOrder($query, $sort);
+            }, function ($query) use ($sort) {
+                $this->applySortOrder($query, $sort);
+            })
             ->paginate(12)
             ->withQueryString();
 
-        return view('pages.repository', compact('documents', 'kategori', 'search'));
+        // Daftar tahun yang tersedia untuk dropdown filter
+        $availableTahun = $this->publicDocuments()
+            ->when($kategori, fn ($q) => $q->where('kategori', $kategori))
+            ->whereNotNull('tahun')
+            ->distinct()
+            ->orderByDesc('tahun')
+            ->pluck('tahun');
+
+        return view('pages.repository', compact('documents', 'kategori', 'search', 'tahun', 'sort', 'availableTahun'));
+    }
+
+    private function applySortOrder($query, string $sort): void
+    {
+        match ($sort) {
+            'terlama' => $query->oldest(),
+            'az'      => $query->orderByRaw('LOWER(judul) ASC'),
+            'za'      => $query->orderByRaw('LOWER(judul) DESC'),
+            default   => $query->latest(),  // 'terbaru'
+        };
     }
 
     public function guides()

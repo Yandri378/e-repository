@@ -97,27 +97,27 @@
 
     {{-- Baris gagal --}}
     @if (count(session('import_errors', [])) > 0)
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden shadow-sm">
-            <div class="px-5 py-4 bg-amber-100/60 border-b border-amber-200">
-                <p class="font-bold text-amber-800 flex items-center gap-2">
+        <div class="rounded-2xl border border-blue-200 bg-blue-50/70 overflow-hidden shadow-sm">
+            <div class="px-5 py-4 bg-blue-100/60 border-b border-blue-200">
+                <p class="font-bold text-blue-900 flex items-center gap-2">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     {{ count(session('import_errors')) }} baris gagal diimpor
                 </p>
             </div>
             <div class="overflow-x-auto">
-                <table class="min-w-full text-sm divide-y divide-amber-100">
-                    <thead class="bg-amber-50">
-                        <tr class="text-xs font-semibold text-amber-700 uppercase tracking-wide">
+                <table class="min-w-full text-sm divide-y divide-blue-100">
+                    <thead class="bg-blue-50">
+                        <tr class="text-xs font-semibold text-blue-800 uppercase tracking-wide">
                             <th class="px-4 py-3 text-left">Baris</th>
                             <th class="px-4 py-3 text-left">Nama</th>
                             <th class="px-4 py-3 text-left">Judul</th>
                             <th class="px-4 py-3 text-left">Alasan Gagal</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-amber-100 bg-white">
+                    <tbody class="divide-y divide-blue-100 bg-white">
                         @foreach (session('import_errors') as $err)
                             <tr>
-                                <td class="px-4 py-3 font-mono text-amber-700">#{{ $err['row'] }}</td>
+                                <td class="px-4 py-3 font-mono text-blue-800">#{{ $err['row'] }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ $err['nama'] }}</td>
                                 <td class="px-4 py-3 text-slate-600 max-w-xs truncate">{{ $err['judul'] }}</td>
                                 <td class="px-4 py-3">
@@ -558,7 +558,7 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">4</span>
-                            Setiap berkas dokumen dalam ZIP akan menjadi <strong>1 record data</strong> dengan status <strong>Pending</strong>.
+                            Setiap berkas dokumen dalam ZIP akan menjadi <strong>1 record data</strong> dengan status <strong>Terverifikasi</strong> (langsung dapat dicari di katalog).
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">5</span>

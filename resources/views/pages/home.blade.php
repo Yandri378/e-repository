@@ -127,7 +127,7 @@
         line-height: .93;
         letter-spacing: -.02em;
         color: transparent;
-        background: linear-gradient(110deg,#ffffff 0%,#dff8ff 24%,#ffe08a 48%,#72d9ff 72%,#ffffff 100%);
+        background: linear-gradient(110deg,#ffffff 0%,#e0f2fe 30%,#38bdf8 60%,#ffffff 100%);
         background-size: 220% 100%;
         -webkit-background-clip: text;
         background-clip: text;
@@ -140,7 +140,7 @@
         height: 4px;
         margin-top: 1rem;
         border-radius: 999px;
-        background: linear-gradient(90deg,#ffe08a,#72d9ff,#32d6a6);
+        background: linear-gradient(90deg,#38bdf8,#2563eb,#ffffff);
         box-shadow: 0 0 32px rgba(114,217,255,.42);
         content: "";
         transform-origin: left;
@@ -793,6 +793,102 @@
         .float-wa-btn span { display: none; }
         .float-wa-btn { padding: 12px; border-radius: 50%; }
     }
+
+    /* ── FAQ Section ──────────────────────────────────────────── */
+    .faq-section {
+        width: min(1200px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: clamp(2rem,6vw,4.5rem) 0;
+    }
+    .faq-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+        gap: .7rem;
+        margin-top: 0;
+    }
+    @media (max-width: 700px) {
+        .faq-grid { grid-template-columns: 1fr; }
+    }
+    .faq-item {
+        border: 1px solid rgba(114,217,255,.18);
+        border-radius: 14px;
+        background: linear-gradient(145deg, rgba(22,111,153,.55), rgba(12,58,90,.65));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+        overflow: hidden;
+        transition: border-color .2s ease;
+    }
+    .faq-item.open {
+        border-color: rgba(114,217,255,.4);
+    }
+    .faq-question {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.1rem 1.3rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-align: left;
+        font-size: .9rem;
+        font-weight: 700;
+        color: #e8f6ff;
+        line-height: 1.4;
+        transition: background .2s;
+    }
+    .faq-question:hover { background: rgba(255,255,255,.04); }
+    .faq-chevron {
+        flex-shrink: 0;
+        color: #72d9ff;
+        transition: transform .3s cubic-bezier(.2,.9,.2,1);
+    }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height .4s cubic-bezier(.2,.9,.2,1), padding .3s ease;
+        padding: 0 1.3rem;
+    }
+    .faq-answer p {
+        margin: 0;
+        font-size: .86rem;
+        color: rgba(255,255,255,.65);
+        line-height: 1.7;
+        padding-bottom: 1.1rem;
+    }
+    .faq-item.open .faq-answer { max-height: 300px; }
+
+    /* ── Back-to-Top Button ───────────────────────────────────── */
+    .back-to-top {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 99;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(14,114,164,.85), rgba(37,99,235,.9));
+        border: 1px solid rgba(114,217,255,.35);
+        box-shadow: 0 8px 24px rgba(5,73,112,.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #ffffff;
+        opacity: 0;
+        transform: translateY(12px);
+        transition: opacity .35s ease, transform .35s ease, box-shadow .2s ease;
+        backdrop-filter: blur(10px);
+    }
+    .back-to-top.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .back-to-top:hover {
+        box-shadow: 0 14px 36px rgba(5,73,112,.5);
+        transform: translateY(-3px);
+    }
 </style>
 
 {{-- ══════════════════════════════════════════════════════════════
@@ -1074,6 +1170,59 @@
 <div class="home-divider"></div>
 
 {{-- ══════════════════════════════════════════════════════════════
+     FAQ
+══════════════════════════════════════════════════════════════ --}}
+<section class="faq-section">
+    <div class="home-section-heading">
+        <div>
+            <p class="home-eyebrow"><span></span>FAQ</p>
+            <h2>Pertanyaan yang Sering Ditanyakan</h2>
+        </div>
+    </div>
+
+    <div class="faq-grid">
+        @foreach ([
+            [
+                'Bagaimana cara mendapatkan akun untuk upload dokumen?',
+                'Akun mahasiswa dan dosen dibuat langsung oleh admin. Hubungi admin melalui WhatsApp atau email untuk meminta pembuatan akun beserta password awal.'
+            ],
+            [
+                'Kapan sesi upload dokumen dibuka?',
+                'Sesi upload dibuka dan ditutup oleh admin sesuai jadwal. Pantau status sesi pada bagian "Status Sesi Upload" di halaman beranda ini.'
+            ],
+            [
+                'Berapa batas ukuran file yang bisa diupload?',
+                'Ukuran file maksimal adalah 10 MB dengan format PDF. Pastikan file sudah terkompresi dengan baik sebelum diunggah.'
+            ],
+            [
+                'Apakah dokumen langsung muncul di repository setelah upload?',
+                'Tidak. Dokumen mahasiswa harus mendapat persetujuan dosen pembimbing terlebih dahulu, kemudian diverifikasi oleh admin sebelum tampil di repository publik.'
+            ],
+            [
+                'Apa perbedaan antara Skripsi/TA, Laporan Magang, PKM, dan Penelitian?',
+                'Skripsi/TA dan Laporan Magang diupload oleh mahasiswa. PKM (Program Kreativitas Mahasiswa dosen) dan Penelitian Dosen diupload oleh dosen. Masing-masing memiliki sesi upload tersendiri.'
+            ],
+            [
+                'Bagaimana jika dokumen saya ditolak oleh dosen atau admin?',
+                'Anda akan mendapat notifikasi dan dapat mengupload ulang dokumen yang telah diperbaiki sesuai catatan dari dosen atau admin.'
+            ],
+        ] as [$q, $a])
+        <div class="faq-item reveal">
+            <button class="faq-question" type="button" aria-expanded="false">
+                <span>{{ $q }}</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="faq-answer" role="region">
+                <p>{{ $a }}</p>
+            </div>
+        </div>
+        @endforeach
+    </div>
+</section>
+
+<div class="home-divider"></div>
+
+{{-- ══════════════════════════════════════════════════════════════
      BANTUAN & KONTAK WHATSAPP
 ══════════════════════════════════════════════════════════════ --}}
 <section class="home-section" style="padding-bottom: clamp(3rem,8vw,6rem);">
@@ -1101,5 +1250,75 @@
     </svg>
     <span>Hubungi WA (+62 853-6309-7108)</span>
 </a>
+
+{{-- Back-to-Top Button --}}
+<button class="back-to-top" id="back-to-top" aria-label="Kembali ke atas" title="Kembali ke atas">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+(function () {
+    /* ── FAQ Accordion ─────────────────────────────────────── */
+    document.querySelectorAll('.faq-item').forEach(function (item) {
+        const btn = item.querySelector('.faq-question');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            const isOpen = item.classList.contains('open');
+            // Close all others
+            document.querySelectorAll('.faq-item.open').forEach(function (o) {
+                o.classList.remove('open');
+                o.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+            });
+            if (!isOpen) {
+                item.classList.add('open');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+
+    /* ── Back-to-Top ───────────────────────────────────────── */
+    const bttBtn = document.getElementById('back-to-top');
+    if (bttBtn) {
+        window.addEventListener('scroll', function () {
+            bttBtn.classList.toggle('visible', window.scrollY > 320);
+        }, { passive: true });
+        bttBtn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    /* ── Counter Animasi (IntersectionObserver) ────────────── */
+    function animateCount(el) {
+        const target = parseInt(el.textContent.replace(/\D/g, ''), 10);
+        if (isNaN(target) || target === 0) return;
+        const duration = 1200;
+        const start = performance.now();
+        el.textContent = '0';
+        function step(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease-out cubic
+            const ease = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.floor(ease * target).toLocaleString('id-ID');
+            if (progress < 1) requestAnimationFrame(step);
+            else el.textContent = target.toLocaleString('id-ID');
+        }
+        requestAnimationFrame(step);
+    }
+
+    const counterObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                animateCount(entry.target);
+                counterObs.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.stat-number').forEach(function (el) {
+        counterObs.observe(el);
+    });
+})();
+</script>
 
 @endsection
