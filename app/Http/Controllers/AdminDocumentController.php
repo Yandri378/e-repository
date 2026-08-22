@@ -800,6 +800,9 @@ class AdminDocumentController extends Controller
         $kategori = $request->kategori;
         $uploaded = $request->file('file_zip');
 
+        // Clean up any old leftover temp_zip directories before proceeding
+        $this->cleanStaleTempDirectories();
+
         $extractDir = storage_path('app/temp_zip_' . Str::random(16));
         $successCount = 0;
         $errorRows = [];
@@ -966,16 +969,36 @@ class AdminDocumentController extends Controller
                     ];
                 }
             }
-        } catch (\Throwable $e) {
-            // Clean up temp dir — errors suppressed
-            try {
-                if (is_dir($extractDir)) {
-                    $this->deleteDirectory($extractDir);
+
+            if ($request->ajax()) {
+                if ($successCount === 0 && count($errorRows) > 0) {
+                    $firstErr = $errorRows[0]['errors'][0] ?? 'Gagal memproses file dokumen.';
+                    return response()->json([
+                        'message' => 'Gagal memproses file ZIP: ' . $firstErr,
+                        'errors' => $errorRows,
+                    ], 422);
                 }
-            } catch (\Throwable $e) {
-                // Silently ignore cleanup errors
+
+                $message = 'Upload ZIP berhasil! ' . $successCount . ' file dokumen berhasil diproses sebagai data ' . strtoupper($kategori) . '.';
+                if (count($errorRows) > 0) {
+                    $message .= ' (' . count($errorRows) . ' file gagal diproses).';
+                }
+
+                return response()->json([
+                    'message' => $message,
+                    'success_count' => $successCount,
+                    'error_count' => count($errorRows),
+                    'kategori' => $kategori,
+                ]);
             }
 
+            return back()->with([
+                'import_success'  => $successCount,
+                'import_errors'   => $errorRows,
+                'import_kategori' => $kategori,
+                'status'          => 'Upload file ZIP berhasil diproses (' . $successCount . ' berkas).',
+            ]);
+        } catch (\Throwable $e) {
             if ($request->ajax()) {
                 return response()->json([
                     'message' => 'Gagal memproses file ZIP: ' . $e->getMessage(),
@@ -985,45 +1008,50 @@ class AdminDocumentController extends Controller
             return back()
                 ->withInput()
                 ->with('import_error', 'Gagal memproses file ZIP: ' . $e->getMessage());
+        } finally {
+            // Clean up temp dir — ALWAYS executed on success, early return, or exception
+            try {
+                if (is_dir($extractDir)) {
+                    $this->deleteDirectory($extractDir);
+                }
+            } catch (\Throwable $e) {
+                // Silently ignore cleanup errors
+            }
         }
+    }
 
-        // Clean up temp dir — errors suppressed, cleanup failures must not affect the response
+    /**
+     * Hapus direktori temp_zip_* yang tersisa/usang di storage/app.
+     */
+    private function cleanStaleTempDirectories(): void
+    {
         try {
-            if (is_dir($extractDir)) {
-                $this->deleteDirectory($extractDir);
+            $appDir = storage_path('app');
+            if (!is_dir($appDir)) {
+                return;
+            }
+
+            $entries = scandir($appDir);
+            if ($entries === false) {
+                return;
+            }
+
+            $now = time();
+            foreach ($entries as $entry) {
+                if (str_starts_with($entry, 'temp_zip_')) {
+                    $fullPath = $appDir . '/' . $entry;
+                    if (is_dir($fullPath)) {
+                        $mtime = filemtime($fullPath);
+                        // Delete any temp_zip directory older than 10 minutes
+                        if ($mtime !== false && ($now - $mtime) > 600) {
+                            $this->deleteDirectory($fullPath);
+                        }
+                    }
+                }
             }
         } catch (\Throwable $e) {
-            // Silently ignore cleanup errors (e.g. Windows file lock)
+            // Silently ignore
         }
-
-        if ($request->ajax()) {
-            if ($successCount === 0 && count($errorRows) > 0) {
-                $firstErr = $errorRows[0]['errors'][0] ?? 'Gagal memproses file dokumen.';
-                return response()->json([
-                    'message' => 'Gagal memproses file ZIP: ' . $firstErr,
-                    'errors' => $errorRows,
-                ], 422);
-            }
-
-            $message = 'Upload ZIP berhasil! ' . $successCount . ' file dokumen berhasil diproses sebagai data ' . strtoupper($kategori) . '.';
-            if (count($errorRows) > 0) {
-                $message .= ' (' . count($errorRows) . ' file gagal diproses).';
-            }
-
-            return response()->json([
-                'message' => $message,
-                'success_count' => $successCount,
-                'error_count' => count($errorRows),
-                'kategori' => $kategori,
-            ]);
-        }
-
-        return back()->with([
-            'import_success'  => $successCount,
-            'import_errors'   => $errorRows,
-            'import_kategori' => $kategori,
-            'status'          => 'Upload file ZIP berhasil diproses (' . $successCount . ' berkas).',
-        ]);
     }
 
     /**
@@ -1042,28 +1070,31 @@ class AdminDocumentController extends Controller
             );
 
             foreach ($items as $item) {
+                $path = $item->getRealPath();
+                if (!$path) {
+                    $path = $item->getPathname();
+                }
+
                 if ($item->isDir()) {
-                    @rmdir($item->getRealPath());
+                    @chmod($path, 0777);
+                    @rmdir($path);
                 } else {
-                    // On Windows, files may be temporarily locked by antivirus/OS.
-                    // Retry up to 3 times with a short delay before giving up.
-                    $path = $item->getRealPath();
+                    @chmod($path, 0777);
                     $deleted = false;
                     for ($i = 0; $i < 3; $i++) {
                         if (@unlink($path)) {
                             $deleted = true;
                             break;
                         }
-                        // Brief pause to allow OS to release the file lock
-                        usleep(50000); // 50ms
+                        usleep(30000); // 30ms
                     }
-                    // If still locked, skip silently — OS will clean temp files eventually
                 }
             }
         } catch (\Throwable $e) {
-            // Directory cleanup failed — silently ignore, temp files will be cleaned by OS
+            // Directory cleanup failed — silently ignore
         }
 
+        @chmod($dir, 0777);
         @rmdir($dir);
     }
 
