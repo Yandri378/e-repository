@@ -7,6 +7,8 @@ use App\Models\JenisDokumen;
 use App\Models\ProgramStudi;
 use App\Models\RepositoryDocument;
 use App\Models\RepositoryDownloadRequest;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +16,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RuntimeException;
+use SplFileInfo;
+use Throwable;
+use ZipArchive;
 
 class AdminDocumentController extends Controller
 {
@@ -126,17 +134,22 @@ class AdminDocumentController extends Controller
         $data = $request->validate($rules, $messages);
 
         try {
+            /** @var UploadedFile $uploadedPdf */
             $uploadedPdf = $request->file('file_dokumen');
             $storedPdfPath = $this->storeUploadedFile($uploadedPdf, 'repository-documents');
 
             $storedProjectPath = null;
             if ($request->hasFile('file_project')) {
-                try {
-                    $storedProjectPath = $this->storeUploadedFile($request->file('file_project'), 'repository-projects');
-                } catch (\Throwable $projectStorageException) {
-                    Log::warning('Gagal menyimpan file project upload manual admin, dokumen tetap disimpan tanpa file project.', [
-                        'exception' => $projectStorageException,
-                    ]);
+                /** @var UploadedFile $projectFile */
+                $projectFile = $request->file('file_project');
+                if ($projectFile instanceof UploadedFile) {
+                    try {
+                        $storedProjectPath = $this->storeUploadedFile($projectFile, 'repository-projects');
+                    } catch (Throwable $projectStorageException) {
+                        Log::warning('Gagal menyimpan file project upload manual admin, dokumen tetap disimpan tanpa file project.', [
+                            'exception' => $projectStorageException,
+                        ]);
+                    }
                 }
             }
 
@@ -146,7 +159,7 @@ class AdminDocumentController extends Controller
                 if ($tempPath && is_file($tempPath)) {
                     $pdfPageCount = $this->countPdfPages($tempPath);
                 }
-            } catch (\Throwable $pageCountException) {
+            } catch (Throwable $pageCountException) {
                 Log::warning('Gagal menghitung halaman PDF saat upload manual admin.', ['exception' => $pageCountException]);
             }
 
@@ -221,8 +234,8 @@ class AdminDocumentController extends Controller
             return null;
         }
 
-        $handle = fopen($filePath, 'rb');
-        if (!$handle) {
+        $handle = @fopen($filePath, 'rb');
+        if (!is_resource($handle)) {
             return null;
         }
 
@@ -318,7 +331,12 @@ class AdminDocumentController extends Controller
         ]);
     }
 
-    private function simplePdfFromDocuments($documents, $title)
+    /**
+     * @param iterable<RepositoryDocument> $documents
+     * @param string $title
+     * @return string
+     */
+    private function simplePdfFromDocuments(iterable $documents, string $title): string
     {
         $lines = [$title, ''];
         $lines[] = 'Nama | Identitas | Prodi | Judul | Tahun | Kategori';
@@ -413,15 +431,25 @@ class AdminDocumentController extends Controller
 
     public function download(RepositoryDocument $document)
     {
-        abort_if(!$document->file_dokumen, 404, 'File dokumen belum tersedia.');
-        // Prefer private storage; fallback to public
-        if (Storage::disk('local')->exists($document->file_dokumen)) {
-            return Storage::disk('local')->download($document->file_dokumen);
+        $filePath = $document->file_dokumen;
+        if (empty($filePath) || !is_string($filePath)) {
+            abort(404, 'File dokumen belum tersedia.');
         }
 
-        abort_if(!Storage::disk('public')->exists($document->file_dokumen), 404, 'File dokumen tidak ditemukan.');
+        // Prefer private storage; fallback to public
+        /** @var FilesystemAdapter $localDisk */
+        $localDisk = Storage::disk('local');
+        if ($localDisk->exists($filePath)) {
+            return $localDisk->download($filePath);
+        }
 
-        return Storage::disk('public')->download($document->file_dokumen);
+        /** @var FilesystemAdapter $publicDisk */
+        $publicDisk = Storage::disk('public');
+        if ($publicDisk->exists($filePath)) {
+            return $publicDisk->download($filePath);
+        }
+
+        abort(404, 'File dokumen tidak ditemukan.');
     }
 
     public function destroy(RepositoryDocument $document)
@@ -431,7 +459,7 @@ class AdminDocumentController extends Controller
         foreach (['file_dokumen', 'file_project'] as $field) {
             $path = $document->{$field};
 
-            if (!$path) {
+            if (empty($path) || !is_string($path)) {
                 continue;
             }
 
@@ -483,7 +511,11 @@ class AdminDocumentController extends Controller
         return back()->with('status', 'Permintaan unduh telah disetujui.')->with('whatsapp_notification_url', $waUrl);
     }
 
-    private function searchDocuments(Request $request)
+    /**
+     * @param Request $request
+     * @return Builder
+     */
+    private function searchDocuments(Request $request): Builder
     {
         return RepositoryDocument::with(['programStudi', 'jenisDokumen'])
             ->when($request->search, function ($query, string $search) {
@@ -614,6 +646,7 @@ class AdminDocumentController extends Controller
         ]);
 
         $kategori = $request->kategori;
+        /** @var UploadedFile $uploaded */
         $uploaded = $request->file('file');
         $extension = strtolower($uploaded->getClientOriginalExtension());
         $filePath = $uploaded->getRealPath();
@@ -621,14 +654,15 @@ class AdminDocumentController extends Controller
         $zipExtractDir = null;
         if ($request->hasFile('file_zip')) {
             try {
+                /** @var UploadedFile $zipFile */
                 $zipFile = $request->file('file_zip');
-                $zip = new \ZipArchive();
+                $zip = new ZipArchive();
                 if ($zip->open($zipFile->getRealPath()) === true) {
                     $zipExtractDir = storage_path('app/temp_excel_zip_' . Str::random(16));
                     $zip->extractTo($zipExtractDir);
                     $zip->close();
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::warning('Gagal mengekstrak ZIP lampiran pada Import Excel: ' . $e->getMessage());
             }
         }
@@ -763,13 +797,13 @@ class AdminDocumentController extends Controller
 
         if ($ext === 'zip') {
             try {
-                $zip = new \ZipArchive();
+                $zip = new ZipArchive();
                 if ($zip->open($archivePath) === true) {
                     $zip->extractTo($destinationDir);
                     $zip->close();
                     return true;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // fallback to tar.exe
             }
         }
@@ -797,6 +831,7 @@ class AdminDocumentController extends Controller
         ]);
 
         $kategori = $request->kategori;
+        /** @var UploadedFile $uploaded */
         $uploaded = $request->file('file_zip');
 
         // Clean up any old leftover temp_zip directories before proceeding
@@ -824,9 +859,10 @@ class AdminDocumentController extends Controller
             // Unpack any nested archive files (.rar, .zip, .7z) found inside the extracted directory
             for ($pass = 0; $pass < 3; $pass++) {
                 $nestedArchives = [];
-                $iterator = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($extractDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+                $iterator = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS)
                 );
+                /** @var SplFileInfo $file */
                 foreach ($iterator as $file) {
                     if (!$file->isFile()) continue;
                     $fn = $file->getFilename();
@@ -853,9 +889,10 @@ class AdminDocumentController extends Controller
             // Scan all document files recursively
             $docFiles = [];
             $allFoundFiles = [];
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($extractDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS)
             );
+            /** @var SplFileInfo $file */
             foreach ($iterator as $file) {
                 if (!$file->isFile()) {
                     continue;
@@ -1063,11 +1100,12 @@ class AdminDocumentController extends Controller
         }
 
         try {
-            $items = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
+            $items = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
             );
 
+            /** @var SplFileInfo $item */
             foreach ($items as $item) {
                 $path = $item->getRealPath();
                 if (!$path) {
