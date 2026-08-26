@@ -795,24 +795,50 @@ class AdminDocumentController extends Controller
 
         $ext = strtolower(pathinfo($archivePath, PATHINFO_EXTENSION));
 
-        if ($ext === 'zip') {
+        // 1. Primary extractor for ZIP files: PHP ZipArchive extension
+        if ($ext === 'zip' && class_exists('ZipArchive')) {
             try {
                 $zip = new ZipArchive();
                 if ($zip->open($archivePath) === true) {
                     $zip->extractTo($destinationDir);
                     $zip->close();
-                    return true;
+                    $contents = @scandir($destinationDir);
+                    if ($contents !== false && count($contents) > 2) {
+                        return true;
+                    }
                 }
             } catch (Throwable $e) {
-                // fallback to tar.exe
+                // Fallback to CLI
             }
         }
 
-        // Use bsdtar (tar.exe) on Windows/Linux to extract .rar, .zip, .7z, etc.
-        $cmd = 'tar.exe -xf ' . escapeshellarg($archivePath) . ' -C ' . escapeshellarg($destinationDir) . ' 2>&1';
-        @exec($cmd, $output, $resultCode);
+        // 2. Secondary extractor using CLI command if exec & escapeshellarg are enabled in php.ini
+        if (function_exists('exec') && function_exists('escapeshellarg')) {
+            $bin = (defined('PHP_OS_FAMILY') && PHP_OS_FAMILY === 'Windows') ? 'tar.exe' : 'tar';
+            $cmd = $bin . ' -xf ' . \escapeshellarg($archivePath) . ' -C ' . \escapeshellarg($destinationDir) . ' 2>&1';
+            try {
+                @exec($cmd, $output, $resultCode);
+                $contents = @scandir($destinationDir);
+                if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
+                    return true;
+                }
+            } catch (Throwable $e) {
+                // Ignore CLI error
+            }
 
-        return is_dir($destinationDir) && count(scandir($destinationDir)) > 2;
+            // On Linux, fallback to unzip command if tar fails for zip files
+            if ($ext === 'zip' && (!defined('PHP_OS_FAMILY') || PHP_OS_FAMILY !== 'Windows')) {
+                $cmdUnzip = 'unzip -o ' . \escapeshellarg($archivePath) . ' -d ' . \escapeshellarg($destinationDir) . ' 2>&1';
+                try {
+                    @exec($cmdUnzip, $output, $resultCode);
+                } catch (Throwable $e) {
+                    // Ignore CLI error
+                }
+            }
+        }
+
+        $contents = @scandir($destinationDir);
+        return is_dir($destinationDir) && $contents !== false && count($contents) > 2;
     }
 
     /**
