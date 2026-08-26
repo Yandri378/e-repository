@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Imports\RepositoryDocumentImport;
 use App\Models\JenisDokumen;
 use App\Models\ProgramStudi;
 use App\Models\RepositoryDocument;
-use App\Models\User;
+use App\Models\RepositoryDownloadRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -452,14 +451,14 @@ class AdminDocumentController extends Controller
 
     public function downloadRequests(Request $request)
     {
-        $requests = \App\Models\RepositoryDownloadRequest::with('document')
+        $requests = RepositoryDownloadRequest::with('document')
             ->latest()
             ->paginate(15);
 
         return view('admin.downloads.index', compact('requests'));
     }
 
-    public function approveDownloadRequest(Request $request, \App\Models\RepositoryDownloadRequest $downloadRequest)
+    public function approveDownloadRequest(Request $request, RepositoryDownloadRequest $downloadRequest)
     {
         $downloadRequest->update([
             'status' => 'approved',
