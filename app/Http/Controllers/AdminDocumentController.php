@@ -105,7 +105,7 @@ class AdminDocumentController extends Controller
             'detail' => ['nullable', 'string'],
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
             'file_dokumen' => ['required', 'file', 'mimetypes:application/pdf,application/x-pdf,text/pdf,application/octet-stream', 'extensions:pdf', 'max:10240'],
-            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:819200'],
+            'file_project' => ['nullable', 'file', 'extensions:zip,rar', 'max:819200'],
         ];
 
         if ($kategori === 'skripsi') {
@@ -125,8 +125,9 @@ class AdminDocumentController extends Controller
             'judul.required' => 'Judul dokumen/penelitian wajib diisi.',
             'file_dokumen.required' => 'File dokumen PDF wajib diunggah.',
             'file_dokumen.mimes' => 'File dokumen harus berformat PDF (.pdf).',
+            'file_dokumen.uploaded' => 'File dokumen gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
             'file_dokumen.max' => 'Ukuran file dokumen PDF melebihi batas maksimum 10 MB.',
-            'file_project.mimes' => 'File project harus berformat ZIP (.zip) atau RAR (.rar).',
+            'file_project.uploaded' => 'File project ZIP/RAR gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
             'file_project.extensions' => 'File project harus berekstensi .zip atau .rar.',
             'file_project.max' => 'Ukuran file project ZIP/RAR melebihi batas maksimum 800 MB.',
         ];
@@ -143,13 +144,7 @@ class AdminDocumentController extends Controller
                 /** @var UploadedFile $projectFile */
                 $projectFile = $request->file('file_project');
                 if ($projectFile instanceof UploadedFile) {
-                    try {
-                        $storedProjectPath = $this->storeUploadedFile($projectFile, 'repository-projects');
-                    } catch (Throwable $projectStorageException) {
-                        Log::warning('Gagal menyimpan file project upload manual admin, dokumen tetap disimpan tanpa file project.', [
-                            'exception' => $projectStorageException,
-                        ]);
-                    }
+                    $storedProjectPath = $this->storeUploadedFile($projectFile, 'repository-projects');
                 }
             }
 
@@ -160,7 +155,7 @@ class AdminDocumentController extends Controller
                     $pdfPageCount = $this->countPdfPages($tempPath);
                 }
             } catch (Throwable $pageCountException) {
-                Log::warning('Gagal menghitung halaman PDF saat upload manual admin.', ['exception' => $pageCountException]);
+                $this->safeLog('warning', 'Gagal menghitung halaman PDF saat upload manual admin.', ['exception' => $pageCountException]);
             }
 
             $document = RepositoryDocument::create([
@@ -194,7 +189,13 @@ class AdminDocumentController extends Controller
                 ->route('admin.documents.index', ['status' => 'terverifikasi'])
                 ->with('status', 'Data ' . strtoupper($kategori) . ' "' . $document->judul . '" berhasil diupload secara manual.');
         } catch (\Throwable $e) {
-            Log::error('Upload manual admin gagal: ' . $e->getMessage(), ['exception' => $e]);
+            $this->safeLog('error', 'Upload manual admin gagal: ' . $e->getMessage(), ['exception' => $e]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => 'Upload dokumen gagal: ' . $e->getMessage(),
+                ], 422);
+            }
 
             return redirect()
                 ->back()
@@ -209,14 +210,18 @@ class AdminDocumentController extends Controller
 
         foreach (['local', 'public'] as $disk) {
             try {
-                $path = $uploadedFile->store($directory, $disk);
+                $path = Storage::disk($disk)->putFileAs(
+                    $directory,
+                    $uploadedFile,
+                    Str::random(40) . '.' . strtolower($uploadedFile->getClientOriginalExtension())
+                );
 
                 if ($path) {
                     return $path;
                 }
             } catch (\Throwable $exception) {
                 $lastException = $exception;
-                Log::warning('Gagal menyimpan file upload ke disk.', [
+                $this->safeLog('warning', 'Gagal menyimpan file upload ke disk.', [
                     'disk' => $disk,
                     'directory' => $directory,
                     'filename' => $uploadedFile->getClientOriginalName(),
@@ -226,6 +231,15 @@ class AdminDocumentController extends Controller
         }
 
         throw new \RuntimeException('Gagal menyimpan berkas ke penyimpanan server. Silakan coba lagi atau hubungi admin.', 0, $lastException);
+    }
+
+    private function safeLog(string $level, string $message, array $context = []): void
+    {
+        try {
+            Log::log($level, $message, $context);
+        } catch (Throwable) {
+            // Upload should not fail just because storage/logs is not writable on hosting.
+        }
     }
 
     private function countPdfPages(string $filePath): ?int
@@ -636,12 +650,13 @@ class AdminDocumentController extends Controller
         $request->validate([
             'kategori' => ['required', 'in:skripsi,magang,pkm,penelitian'],
             'file' => ['required', 'file', 'mimes:xlsx,csv', 'max:10240'],
-            'file_zip' => ['nullable', 'file', 'mimes:zip', 'max:819200'], // max 800 MB
+            'file_zip' => ['nullable', 'file', 'extensions:zip', 'max:819200'], // max 800 MB
         ], [
             'file.required' => 'File Excel/CSV wajib dipilih.',
             'file.mimes' => 'File harus berformat .xlsx atau .csv.',
             'file.max' => 'Ukuran file Excel maksimal 10 MB.',
-            'file_zip.mimes' => 'File lampiran harus berformat .zip.',
+            'file_zip.uploaded' => 'File ZIP lampiran gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
+            'file_zip.extensions' => 'File lampiran harus berekstensi .zip.',
             'file_zip.max' => 'Ukuran file ZIP maksimal 800 MB.',
         ]);
 
@@ -663,7 +678,7 @@ class AdminDocumentController extends Controller
                     $zip->close();
                 }
             } catch (Throwable $e) {
-                Log::warning('Gagal mengekstrak ZIP lampiran pada Import Excel: ' . $e->getMessage());
+                $this->safeLog('warning', 'Gagal mengekstrak ZIP lampiran pada Import Excel: ' . $e->getMessage());
             }
         }
 
@@ -928,10 +943,11 @@ class AdminDocumentController extends Controller
     {
         $request->validate([
             'kategori' => ['required', 'in:skripsi,magang,pkm,penelitian'],
-            'file_zip' => ['required', 'file', 'mimes:zip,rar', 'extensions:zip,rar,7z', 'max:819200'], // max 800 MB
+            'file_zip' => ['required', 'file', 'extensions:zip,rar,7z', 'max:819200'], // max 800 MB
         ], [
             'file_zip.required' => 'File ZIP/RAR wajib dipilih.',
-            'file_zip.mimes'    => 'File harus berformat .zip atau .rar.',
+            'file_zip.uploaded' => 'File ZIP/RAR gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
+            'file_zip.extensions' => 'File harus berekstensi .zip, .rar, atau .7z.',
             'file_zip.max'      => 'Ukuran file ZIP/RAR maksimal 800 MB.',
         ]);
 

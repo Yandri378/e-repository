@@ -8,11 +8,14 @@ use App\Models\RepositoryDocument;
 use App\Models\RepositorySetting;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class RepositoryController extends Controller
 {
@@ -61,59 +64,82 @@ class RepositoryController extends Controller
             'abstrak' => ['nullable', 'string'],
             'detail' => ['nullable', 'string'],
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
-            'file_dokumen' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
-            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:102400'],
+            'file_dokumen' => ['nullable', 'file', 'mimetypes:application/pdf,application/x-pdf,text/pdf,application/octet-stream', 'extensions:pdf', 'max:10240'],
+            'file_project' => ['nullable', 'file', 'extensions:zip,rar', 'max:102400'],
             // PDF completeness declaration (required for mahasiswa skripsi/magang if file is uploaded)
             'pdf_kelengkapan_deklarasi' => ['nullable', 'boolean'],
+        ], [
+            'file_dokumen.uploaded' => 'File dokumen gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
+            'file_dokumen.extensions' => 'File dokumen harus berekstensi .pdf.',
+            'file_dokumen.max' => 'Ukuran file dokumen PDF melebihi batas maksimum 10 MB.',
+            'file_project.uploaded' => 'File project ZIP/RAR gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
+            'file_project.extensions' => 'File project harus berekstensi .zip atau .rar.',
+            'file_project.max' => 'Ukuran file project ZIP/RAR melebihi batas maksimum 100 MB.',
         ]);
 
-        if ($request->hasFile('file_dokumen')) {
-            $uploadedPdf = $request->file('file_dokumen');
-            $data['file_dokumen'] = $uploadedPdf->store('repository-documents', 'local');
-            $data['jenis_input'] = 'upload';
-            $data['status'] = 'pending';
+        try {
+            if ($request->hasFile('file_dokumen')) {
+                $uploadedPdf = $request->file('file_dokumen');
+                $data['file_dokumen'] = $this->storeUploadedFile($uploadedPdf, 'repository-documents');
+                $data['jenis_input'] = 'upload';
+                $data['status'] = 'pending';
 
-            // Save PDF page count (best-effort binary scan server-side)
-            $data['pdf_page_count'] = $this->countPdfPages($uploadedPdf->getRealPath());
+                // Save PDF page count (best-effort binary scan server-side)
+                $data['pdf_page_count'] = $this->countPdfPages($uploadedPdf->getRealPath());
 
-            // Save declaration flag from mahasiswa
-            if ($user->role === 'mahasiswa' && in_array($kategori, ['skripsi', 'magang'], true)) {
-                $data['pdf_kelengkapan_deklarasi'] = $request->boolean('pdf_kelengkapan_deklarasi');
+                // Save declaration flag from mahasiswa
+                if ($user->role === 'mahasiswa' && in_array($kategori, ['skripsi', 'magang'], true)) {
+                    $data['pdf_kelengkapan_deklarasi'] = $request->boolean('pdf_kelengkapan_deklarasi');
 
-                // Server-side guard: reject if mahasiswa didn't declare completeness
-                if (! $data['pdf_kelengkapan_deklarasi']) {
+                    // Server-side guard: reject if mahasiswa didn't declare completeness
+                    if (! $data['pdf_kelengkapan_deklarasi']) {
+                        throw ValidationException::withMessages([
+                            'pdf_kelengkapan_deklarasi' => 'Anda wajib mencentang pernyataan kelengkapan PDF (halaman pengesahan, persetujuan, dan orisinalitas).',
+                        ]);
+                    }
+                }
+            } elseif (($data['jenis_input'] ?? null) === 'arsip') {
+                if ($user->role !== 'admin') {
                     throw ValidationException::withMessages([
-                        'pdf_kelengkapan_deklarasi' => 'Anda wajib mencentang pernyataan kelengkapan PDF (halaman pengesahan, persetujuan, dan orisinalitas).',
+                        'file_dokumen' => 'Mahasiswa dan dosen wajib upload dokumen PDF.',
                     ]);
                 }
-            }
-        } elseif (($data['jenis_input'] ?? null) === 'arsip') {
-            if ($user->role !== 'admin') {
+
+                $data['status'] = 'arsip';
+            } else {
                 throw ValidationException::withMessages([
-                    'file_dokumen' => 'Mahasiswa dan dosen wajib upload dokumen PDF.',
+                    'file_dokumen' => 'Upload dokumen PDF wajib diisi untuk data upload.',
                 ]);
             }
 
-            $data['status'] = 'arsip';
-        } else {
-            throw ValidationException::withMessages([
-                'file_dokumen' => 'Upload dokumen PDF wajib diisi untuk data upload.',
-            ]);
-        }
+            if ($request->hasFile('file_project')) {
+                $data['file_project'] = $this->storeUploadedFile($request->file('file_project'), 'repository-projects');
+            }
 
-        if ($request->hasFile('file_project')) {
-            $data['file_project'] = $request->file('file_project')->store('repository-projects', 'local');
-        }
+            $document = RepositoryDocument::create(array_merge($data, [
+                'kategori' => $kategori,
+                'user_id' => Auth::id(),
+                'input_by' => Auth::id(),
+                'bulan' => $data['bulan'] ?? now()->month,
+                'tanggal_upload' => now(),
+                'status' => $data['status'] ?? 'pending',
+                'submission_token' => $user->role === 'admin' ? Str::random(48) : null,
+            ]));
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            $this->safeLog('error', 'Upload repository gagal: '.$exception->getMessage(), ['exception' => $exception]);
 
-        $document = RepositoryDocument::create(array_merge($data, [
-            'kategori' => $kategori,
-            'user_id' => Auth::id(),
-            'input_by' => Auth::id(),
-            'bulan' => $data['bulan'] ?? now()->month,
-            'tanggal_upload' => now(),
-            'status' => $data['status'] ?? 'pending',
-            'submission_token' => $user->role === 'admin' ? Str::random(48) : null,
-        ]));
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => 'Upload dokumen gagal: '.$exception->getMessage(),
+                ], 422);
+            }
+
+            return back()
+                ->withInput()
+                ->withErrors(['file_dokumen' => 'Upload dokumen gagal: '.$exception->getMessage()]);
+        }
 
         if ($user->role === 'admin') {
             return redirect()
@@ -225,26 +251,47 @@ class RepositoryController extends Controller
             'abstrak' => ['nullable', 'string'],
             'detail' => ['nullable', 'string', 'max:2000'],
             'status_penelitian' => ['nullable', 'in:berjalan,selesai'],
-            'file_dokumen' => ['required', 'file', 'mimes:pdf', 'max:5120'],
-            'file_project' => ['nullable', 'file', 'mimes:zip,rar', 'extensions:zip,rar', 'max:102400'],
+            'file_dokumen' => ['required', 'file', 'mimetypes:application/pdf,application/x-pdf,text/pdf,application/octet-stream', 'extensions:pdf', 'max:10240'],
+            'file_project' => ['nullable', 'file', 'extensions:zip,rar', 'max:102400'],
+        ], [
+            'file_dokumen.uploaded' => 'File dokumen gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
+            'file_dokumen.extensions' => 'File dokumen harus berekstensi .pdf.',
+            'file_dokumen.max' => 'Ukuran file dokumen PDF melebihi batas maksimum 10 MB.',
+            'file_project.uploaded' => 'File project ZIP/RAR gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
+            'file_project.extensions' => 'File project harus berekstensi .zip atau .rar.',
+            'file_project.max' => 'Ukuran file project ZIP/RAR melebihi batas maksimum 100 MB.',
         ]);
 
-        // Store uploads in private disk to prevent direct public access
-        $storedPath = $request->file('file_dokumen')->store('repository-documents', 'local');
-        $storedProjectPath = $request->hasFile('file_project')
-            ? $request->file('file_project')->store('repository-projects', 'local')
-            : null;
+        try {
+            // Store uploads in private disk to prevent direct public access
+            $storedPath = $this->storeUploadedFile($request->file('file_dokumen'), 'repository-documents');
+            $storedProjectPath = $request->hasFile('file_project')
+                ? $this->storeUploadedFile($request->file('file_project'), 'repository-projects')
+                : null;
 
-        $document = RepositoryDocument::create(array_merge($data, [
-            'kategori' => $kategori,
-            'jenis_input' => 'upload',
-            'file_dokumen' => $storedPath,
-            'file_project' => $storedProjectPath,
-            'bulan' => $data['bulan'] ?? now()->month,
-            'tanggal_upload' => now(),
-            'status' => 'pending',
-            'submission_token' => Str::random(48),
-        ]));
+            $document = RepositoryDocument::create(array_merge($data, [
+                'kategori' => $kategori,
+                'jenis_input' => 'upload',
+                'file_dokumen' => $storedPath,
+                'file_project' => $storedProjectPath,
+                'bulan' => $data['bulan'] ?? now()->month,
+                'tanggal_upload' => now(),
+                'status' => 'pending',
+                'submission_token' => Str::random(48),
+            ]));
+        } catch (Throwable $exception) {
+            $this->safeLog('error', 'Upload repository publik gagal: '.$exception->getMessage(), ['exception' => $exception]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => 'Upload dokumen gagal: '.$exception->getMessage(),
+                ], 422);
+            }
+
+            return back()
+                ->withInput()
+                ->withErrors(['file_dokumen' => 'Upload dokumen gagal: '.$exception->getMessage()]);
+        }
 
         return redirect()
             ->route('public.upload.detail', [$document, $document->submission_token])
@@ -344,6 +391,44 @@ class RepositoryController extends Controller
             || $document->user_id === $user->id
             || $document->dosen_pembimbing_id === $user->id
             || in_array($document->status, ['terverifikasi', 'arsip'], true);
+    }
+
+    private function storeUploadedFile(UploadedFile $uploadedFile, string $directory): string
+    {
+        $lastException = null;
+
+        foreach (['local', 'public'] as $disk) {
+            try {
+                $path = Storage::disk($disk)->putFileAs(
+                    $directory,
+                    $uploadedFile,
+                    Str::random(40).'.'.strtolower($uploadedFile->getClientOriginalExtension())
+                );
+
+                if ($path) {
+                    return $path;
+                }
+            } catch (Throwable $exception) {
+                $lastException = $exception;
+                $this->safeLog('warning', 'Gagal menyimpan file upload repository ke disk.', [
+                    'disk' => $disk,
+                    'directory' => $directory,
+                    'filename' => $uploadedFile->getClientOriginalName(),
+                    'exception' => $exception,
+                ]);
+            }
+        }
+
+        throw new \RuntimeException('Gagal menyimpan berkas ke penyimpanan server. Silakan coba lagi atau hubungi admin.', 0, $lastException);
+    }
+
+    private function safeLog(string $level, string $message, array $context = []): void
+    {
+        try {
+            Log::log($level, $message, $context);
+        } catch (Throwable) {
+            // Upload should not fail just because storage/logs is not writable on hosting.
+        }
     }
 
     private function downloadFilename(RepositoryDocument $document): string

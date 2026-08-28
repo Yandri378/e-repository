@@ -489,7 +489,7 @@
                             window.location.href = xhr.responseURL || window.location.href;
                             return;
                         }
-                        showUploadError('Terjadi kesalahan saat mengunggah. Silakan coba lagi.');
+                        showUploadError(uploadErrorMessage(xhr));
                     };
 
                     xhr.onerror = function () {
@@ -524,6 +524,31 @@
                     submitBtn.innerText = 'Simpan Data';
                 }
                 alert(message);
+            }
+
+            function uploadErrorMessage(xhr) {
+                if (xhr.status === 413) {
+                    return 'Ukuran file terlalu besar untuk konfigurasi hosting. Naikkan upload_max_filesize dan post_max_size di server.';
+                }
+
+                try {
+                    const payload = JSON.parse(xhr.responseText || '{}');
+                    if (payload.message) {
+                        return payload.message;
+                    }
+
+                    if (payload.errors) {
+                        const firstKey = Object.keys(payload.errors)[0];
+                        const firstError = firstKey ? payload.errors[firstKey][0] : null;
+                        if (firstError) {
+                            return firstError;
+                        }
+                    }
+                } catch (error) {
+                    // Fall back to the generic message below.
+                }
+
+                return 'Terjadi kesalahan saat mengunggah. Silakan coba lagi.';
             }
         });
     </script>
