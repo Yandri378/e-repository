@@ -64,6 +64,54 @@ class AdminZipImportTest extends TestCase
         }
     }
 
+    public function test_admin_can_import_zip_with_php_temp_file_path(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status_akun' => 'aktif',
+        ]);
+
+        // Create a temporary file without .zip extension, like PHP uploaded temp files (/tmp/php1234)
+        $tempZipPath = tempnam(sys_get_temp_dir(), 'php_upload_test_');
+        $zip = new \ZipArchive();
+        $zip->open($tempZipPath, \ZipArchive::CREATE);
+        $zip->addFromString('Dokumen_Skripsi_Siti.pdf', '%PDF-1.4 dummy pdf content');
+        $zip->close();
+
+        $uploadedZip = new UploadedFile(
+            $tempZipPath,
+            'skripsi_siti.zip',
+            'application/zip',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($admin)
+            ->post(route('admin.documents.import.zip'), [
+                'kategori' => 'skripsi',
+                'file_zip' => $uploadedZip,
+            ], ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success_count' => 1,
+                'kategori' => 'skripsi',
+            ]);
+
+        $this->assertDatabaseHas('repository_documents', [
+            'nama' => 'Dokumen_Skripsi_Siti',
+            'kategori' => 'skripsi',
+            'status' => 'terverifikasi',
+        ]);
+
+        if (file_exists($tempZipPath)) {
+            unlink($tempZipPath);
+        }
+    }
+
     public function test_returns_diagnostic_error_when_no_documents_in_zip(): void
     {
         $admin = User::factory()->create([

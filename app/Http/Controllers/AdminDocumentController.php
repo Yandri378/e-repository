@@ -783,7 +783,7 @@ class AdminDocumentController extends Controller
     /**
      * Ekstrak file arsip (.zip, .rar, .7z, dll) ke direktori tujuan.
      */
-    private function extractArchiveFile(string $archivePath, string $destinationDir): bool
+    private function extractArchiveFile(string $archivePath, string $destinationDir, ?string $originalExtension = null): bool
     {
         if (!file_exists($archivePath)) {
             return false;
@@ -794,9 +794,13 @@ class AdminDocumentController extends Controller
         }
 
         $ext = strtolower(pathinfo($archivePath, PATHINFO_EXTENSION));
+        if (!empty($originalExtension)) {
+            $ext = strtolower($originalExtension);
+        }
 
         // 1. Primary extractor for ZIP files: PHP ZipArchive extension
-        if ($ext === 'zip' && class_exists('ZipArchive')) {
+        // ZipArchive examines file magic headers (PK\x03\x04), so it works on any temp file path (/tmp/php1234, .tmp, etc.)
+        if (class_exists('ZipArchive')) {
             try {
                 $zip = new ZipArchive();
                 if ($zip->open($archivePath) === true) {
@@ -807,33 +811,108 @@ class AdminDocumentController extends Controller
                         return true;
                     }
                 }
-            } catch (Throwable $e) {
-                // Fallback to CLI
+            } catch (\Throwable $e) {
+                // Fallback to next extractor
             }
         }
 
-        // 2. Secondary extractor using CLI command if exec & escapeshellarg are enabled in php.ini
-        if (function_exists('exec') && function_exists('escapeshellarg')) {
-            $bin = (defined('PHP_OS_FAMILY') && PHP_OS_FAMILY === 'Windows') ? 'tar.exe' : 'tar';
-            $cmd = $bin . ' -xf ' . \escapeshellarg($archivePath) . ' -C ' . \escapeshellarg($destinationDir) . ' 2>&1';
+        // 2. Extractor for RAR files: PHP RarArchive extension (PECL rar)
+        if (class_exists('RarArchive')) {
             try {
-                @exec($cmd, $output, $resultCode);
+                $rar = \RarArchive::open($archivePath);
+                if ($rar !== false) {
+                    $entries = $rar->getEntries();
+                    if ($entries !== false) {
+                        foreach ($entries as $entry) {
+                            $entry->extract($destinationDir);
+                        }
+                        $rar->close();
+                        $contents = @scandir($destinationDir);
+                        if ($contents !== false && count($contents) > 2) {
+                            return true;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Fallback
+            }
+        }
+
+        // 3. Extractor for TAR / GZ / TGZ files: PHP PharData extension
+        if (class_exists('PharData')) {
+            try {
+                $phar = new \PharData($archivePath);
+                $phar->extractTo($destinationDir, null, true);
                 $contents = @scandir($destinationDir);
-                if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
+                if ($contents !== false && count($contents) > 2) {
                     return true;
                 }
-            } catch (Throwable $e) {
-                // Ignore CLI error
+            } catch (\Throwable $e) {
+                // Fallback
+            }
+        }
+
+        // 4. Secondary extractor using CLI tools if exec & escapeshellarg are enabled in php.ini
+        if (function_exists('exec') && function_exists('escapeshellarg')) {
+            $tempNamedPath = null;
+            $targetPathForCli = $archivePath;
+
+            // CLI tools like unzip/unrar/7z often require a recognized file extension
+            if (!empty($ext) && !str_ends_with(strtolower($archivePath), '.' . $ext)) {
+                $tempNamedPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cli_extract_' . Str::random(12) . '.' . $ext;
+                @copy($archivePath, $tempNamedPath);
+                $targetPathForCli = $tempNamedPath;
             }
 
-            // On Linux, fallback to unzip command if tar fails for zip files
-            if ($ext === 'zip' && (!defined('PHP_OS_FAMILY') || PHP_OS_FAMILY !== 'Windows')) {
-                $cmdUnzip = 'unzip -o ' . \escapeshellarg($archivePath) . ' -d ' . \escapeshellarg($destinationDir) . ' 2>&1';
-                try {
-                    @exec($cmdUnzip, $output, $resultCode);
-                } catch (Throwable $e) {
-                    // Ignore CLI error
+            // Try 7z / 7za first if available (supports zip, rar, 7z, tar, gz, etc.)
+            try {
+                $cmd7z = '7z x ' . \escapeshellarg($targetPathForCli) . ' -o' . \escapeshellarg($destinationDir) . ' -y 2>&1';
+                @exec($cmd7z, $output, $resultCode);
+                $contents = @scandir($destinationDir);
+                if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
+                    if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                    return true;
                 }
+            } catch (\Throwable $e) {}
+
+            // Try tar command (tar.exe on Windows, tar on Linux)
+            try {
+                $bin = (defined('PHP_OS_FAMILY') && PHP_OS_FAMILY === 'Windows') ? 'tar.exe' : 'tar';
+                $cmdTar = $bin . ' -xf ' . \escapeshellarg($targetPathForCli) . ' -C ' . \escapeshellarg($destinationDir) . ' 2>&1';
+                @exec($cmdTar, $output, $resultCode);
+                $contents = @scandir($destinationDir);
+                if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
+                    if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                    return true;
+                }
+            } catch (\Throwable $e) {}
+
+            // Try unzip command on Linux/Unix
+            if (!defined('PHP_OS_FAMILY') || PHP_OS_FAMILY !== 'Windows') {
+                try {
+                    $cmdUnzip = 'unzip -o ' . \escapeshellarg($targetPathForCli) . ' -d ' . \escapeshellarg($destinationDir) . ' 2>&1';
+                    @exec($cmdUnzip, $output, $resultCode);
+                    $contents = @scandir($destinationDir);
+                    if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
+                        if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                        return true;
+                    }
+                } catch (\Throwable $e) {}
+
+                // Try unrar command for RAR files
+                try {
+                    $cmdUnrar = 'unrar x -o+ ' . \escapeshellarg($targetPathForCli) . ' ' . \escapeshellarg($destinationDir) . '/ 2>&1';
+                    @exec($cmdUnrar, $output, $resultCode);
+                    $contents = @scandir($destinationDir);
+                    if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
+                        if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                        return true;
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            if ($tempNamedPath && file_exists($tempNamedPath)) {
+                @unlink($tempNamedPath);
             }
         }
 
@@ -868,7 +947,8 @@ class AdminDocumentController extends Controller
         $errorRows = [];
 
         try {
-            $extractedOk = $this->extractArchiveFile($uploaded->getRealPath(), $extractDir);
+            $realPath = $uploaded->getRealPath() ?: $uploaded->getPathname();
+            $extractedOk = $this->extractArchiveFile($realPath, $extractDir, $uploaded->getClientOriginalExtension());
 
             if (!$extractedOk) {
                 if ($request->ajax()) {
@@ -907,7 +987,7 @@ class AdminDocumentController extends Controller
 
                 foreach ($nestedArchives as $archivePath) {
                     $subDir = dirname($archivePath) . '/unpacked_' . Str::random(8);
-                    $this->extractArchiveFile($archivePath, $subDir);
+                    $this->extractArchiveFile($archivePath, $subDir, pathinfo($archivePath, PATHINFO_EXTENSION));
                     @unlink($archivePath);
                 }
             }

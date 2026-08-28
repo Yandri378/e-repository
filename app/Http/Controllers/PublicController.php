@@ -61,10 +61,14 @@ class PublicController extends Controller
                 });
             })
             ->when($search !== '', function ($query) use ($search, $isSingleLetterSearch, $sort) {
-                if (! $isSingleLetterSearch) {
-                    $query->orderByRaw('CASE WHEN LOWER(judul) LIKE LOWER(?) THEN 0 ELSE 1 END', [$search.'%']);
+                if ($isSingleLetterSearch && $sort === 'terbaru') {
+                    $query->orderByRaw('LOWER(judul) ASC');
+                } else {
+                    if (! $isSingleLetterSearch) {
+                        $query->orderByRaw('CASE WHEN LOWER(judul) LIKE LOWER(?) THEN 0 ELSE 1 END', [$search.'%']);
+                    }
+                    $this->applySortOrder($query, $sort);
                 }
-                $this->applySortOrder($query, $sort);
             }, function ($query) use ($sort) {
                 $this->applySortOrder($query, $sort);
             })
