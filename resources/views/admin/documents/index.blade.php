@@ -356,9 +356,14 @@
                     <div class="flex flex-col gap-3 bg-white px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 sm:px-6 sm:py-5">
                         <div class="flex flex-wrap gap-2.5">
                             @if ($document->file_dokumen)
-                                <a href="{{ route('admin.documents.download', $document) }}" class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-all duration-200 hover:scale-105 hover:bg-blue-50">
+                                @php
+                                    $docExt = strtolower(pathinfo($document->file_dokumen, PATHINFO_EXTENSION));
+                                    $isPdf = $docExt === 'pdf';
+                                    $docLabel = $isPdf ? 'Lihat PDF' : 'Unduh Berkas (.' . ($docExt ?: 'file') . ')';
+                                @endphp
+                                <a href="{{ route('admin.documents.download', $document) }}" @if($isPdf) target="_blank" @endif class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-all duration-200 hover:scale-105 hover:bg-blue-50">
                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    Lihat PDF
+                                    {{ $docLabel }}
                                 </a>
                             @endif
                             @if ($document->file_project)

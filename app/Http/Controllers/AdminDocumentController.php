@@ -436,6 +436,7 @@ class AdminDocumentController extends Controller
     private function verifiablePendingDocumentsQuery()
     {
         return RepositoryDocument::where('status', 'pending')
+            ->where('file_dokumen', 'like', '%.pdf')
             ->where(function ($query) {
                 $query->whereNotIn('kategori', ['skripsi', 'magang'])
                     ->orWhereNull('dosen_pembimbing_id')
@@ -450,20 +451,46 @@ class AdminDocumentController extends Controller
             abort(404, 'File dokumen belum tersedia.');
         }
 
-        // Prefer private storage; fallback to public
+        $resolvedPath = $this->resolveStoredFilePath($filePath);
+        abort_if(! $resolvedPath, 404, 'File dokumen tidak ditemukan.');
+
+        $extension = strtolower(pathinfo($resolvedPath, PATHINFO_EXTENSION));
+        $safeExtension = $extension ?: 'pdf';
+        $filename = Str::slug(($document->kategori ?: 'dokumen') . '-' . ($document->judul ?: 'repository')) . '.' . $safeExtension;
+
+        if ($extension === 'pdf') {
+            return response()->file($resolvedPath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+                'X-Content-Type-Options' => 'nosniff',
+                'X-Frame-Options' => 'SAMEORIGIN',
+            ]);
+        }
+
+        // Untuk berkas non-PDF (.txt, .docx, .zip, dll), kembalikan sebagai file unduhan langsung
+        return response()->download($resolvedPath, $filename);
+    }
+
+    private function resolveStoredFilePath(string $filePath): ?string
+    {
         /** @var FilesystemAdapter $localDisk */
         $localDisk = Storage::disk('local');
         if ($localDisk->exists($filePath)) {
-            return $localDisk->download($filePath);
+            return $localDisk->path($filePath);
         }
 
         /** @var FilesystemAdapter $publicDisk */
         $publicDisk = Storage::disk('public');
         if ($publicDisk->exists($filePath)) {
-            return $publicDisk->download($filePath);
+            return $publicDisk->path($filePath);
         }
 
-        abort(404, 'File dokumen tidak ditemukan.');
+        return null;
+    }
+
+    private function safePdfFilename(RepositoryDocument $document): string
+    {
+        return Str::slug(($document->kategori ?: 'dokumen') . '-' . ($document->judul ?: 'repository')) . '.pdf';
     }
 
     public function destroy(RepositoryDocument $document)
@@ -936,8 +963,8 @@ class AdminDocumentController extends Controller
     }
 
     /**
-     * Proses upload file ZIP / RAR berisi file-file PDF / DOC dokumen.
-     * Setiap file dokumen di dalam ZIP/RAR menjadi 1 record RepositoryDocument (status pending).
+     * Proses upload file ZIP / RAR berisi file-file PDF.
+     * Setiap PDF di dalam ZIP/RAR menjadi 1 record RepositoryDocument.
      */
     public function importZip(Request $request)
     {
@@ -1031,7 +1058,7 @@ class AdminDocumentController extends Controller
                 $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                 $allFoundFiles[] = $filename;
 
-                if (in_array($ext, ['pdf', 'doc', 'docx', 'rtf', 'odt', 'txt'], true)) {
+                if ($ext === 'pdf') {
                     $docFiles[] = [
                         'path' => $file->getRealPath(),
                         'filename' => $filename,
@@ -1045,7 +1072,7 @@ class AdminDocumentController extends Controller
                     ? ' Berkas yang ditemukan di dalam arsip: ' . implode(', ', array_slice($allFoundFiles, 0, 5)) . '.'
                     : ' Berkas arsip kosong atau tidak berisi file.';
 
-                $errMsg = 'Tidak ditemukan berkas dokumen (.pdf, .doc, .docx, .rtf, .odt, .txt) di dalam file ZIP/RAR.' . $fileHint;
+                $errMsg = 'Tidak ditemukan berkas PDF (.pdf) di dalam file ZIP/RAR.' . $fileHint;
 
                 if ($request->ajax()) {
                     return response()->json([
@@ -1068,15 +1095,7 @@ class AdminDocumentController extends Controller
                     // Parse basic info from filename (remove extension)
                     $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
 
-                    $mimeType = match ($ext) {
-                        'pdf' => 'application/pdf',
-                        'doc' => 'application/msword',
-                        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        'rtf' => 'application/rtf',
-                        'odt' => 'application/vnd.oasis.opendocument.text',
-                        'txt' => 'text/plain',
-                        default => 'application/octet-stream',
-                    };
+                    $mimeType = 'application/pdf';
 
                     // Store the document file
                     $storedPath = null;

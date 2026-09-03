@@ -56,7 +56,7 @@ class AdminUserController extends Controller
 
         $identityField = $role === 'mahasiswa' ? 'nim' : 'nidn';
 
-        $data = $request->validate([
+        $rules = [
             'role' => ['required', Rule::in(['mahasiswa', 'dosen'])],
             'name' => ['required', 'string', 'max:255'],
             'program_studi_id' => ['required', 'exists:program_studi,id'],
@@ -64,14 +64,41 @@ class AdminUserController extends Controller
             'whatsapp' => ['nullable', 'string', 'max:25'],
             'password' => ['required', 'confirmed', 'min:8'],
             $identityField => ['required', 'string', 'max:30', 'unique:users,'.$identityField],
+        ];
+
+        $messages = [
+            'role.required' => 'Role pengguna wajib dipilih.',
+            'role.in' => 'Role pengguna tidak valid.',
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'program_studi_id.required' => 'Program studi wajib dipilih.',
+            'program_studi_id.exists' => 'Program studi yang dipilih tidak valid.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'email.unique' => 'Email ini sudah terdaftar pada akun pengguna lain.',
+            'nim.required' => 'NIM Mahasiswa wajib diisi.',
+            'nim.unique' => 'NIM Mahasiswa ini sudah terdaftar pada akun pengguna lain.',
+            'nidn.required' => 'NIDN Dosen wajib diisi.',
+            'nidn.unique' => 'NIDN Dosen ini sudah terdaftar pada akun pengguna lain.',
+            'password.required' => 'Password awal wajib diisi.',
+            'password.min' => 'Password minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok dengan Password Awal.',
+        ];
+
+        $data = $request->validate($rules, $messages);
+
+        User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'nim' => $role === 'mahasiswa' ? $data['nim'] : null,
+            'nidn' => $role === 'dosen' ? $data['nidn'] : null,
+            'role' => $role,
+            'program_studi_id' => $data['program_studi_id'],
+            'whatsapp' => $data['whatsapp'] ?? null,
+            'password' => $data['password'],
+            'status_akun' => 'aktif',
         ]);
 
-        User::create(array_merge($data, [
-            'role' => $role,
-            'status_akun' => 'aktif',
-        ]));
-
-        return back()->with('status', 'Akun '.$data['name'].' berhasil dibuat dan langsung aktif. Berikan Email/NIM/NIDN serta password awal kepada pengguna.');
+        return back()->with('status', 'Akun '.$data['name'].' ('.ucfirst($role).') berhasil dibuat dan langsung aktif.');
     }
 
     public function updateStatus(Request $request, User $user)
@@ -91,6 +118,25 @@ class AdminUserController extends Controller
         ]);
 
         return back()->with('status', 'Status akun '.$user->name.' berhasil diperbarui.');
+    }
+
+    public function updatePassword(Request $request, User $user)
+    {
+        abort_if($user->role === 'admin', 403, 'Password akun admin tidak dapat diubah dari halaman ini.');
+
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password.required' => 'Password baru wajib diisi.',
+            'password.min' => 'Password baru minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password baru tidak cocok.',
+        ]);
+
+        $user->update([
+            'password' => $data['password'],
+        ]);
+
+        return back()->with('status', 'Password untuk akun '.$user->name.' berhasil diperbarui.');
     }
 
     public function destroy(User $user)

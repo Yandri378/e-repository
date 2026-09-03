@@ -23,9 +23,18 @@ class RepositoryController extends Controller
     {
         $this->authorizeCategory($kategori);
 
+        $user = Auth::user();
+
+        // Cek apakah sesi upload dibuka (khusus mahasiswa dan dosen)
+        if ($user->role !== 'admin' && ! RepositorySetting::uploadOpen($kategori)) {
+            return back()->withErrors([
+                'session' => 'Sesi upload untuk kategori '.strtoupper($kategori).' saat ini sedang ditutup oleh admin.',
+            ]);
+        }
+
         return view('repository.form', [
             'kategori' => $kategori,
-            'actor' => 'admin',
+            'actor' => $user->role,
             'isPublic' => false,
             'formAction' => route('repository.store', $kategori),
             'programStudi' => ProgramStudi::where('aktif', true)->orderBy('nama')->get(),

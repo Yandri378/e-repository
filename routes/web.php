@@ -41,6 +41,8 @@ Route::get('/dosen', function () {
 })->name('public.dosen.home');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::get('/login/mahasiswa', [AuthController::class, 'showLoginMahasiswa'])->name('login.mahasiswa');
+Route::get('/login/dosen', [AuthController::class, 'showLoginDosen'])->name('login.dosen');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 Route::get('/register/{role?}', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->name('register.store');
@@ -124,6 +126,7 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/', [AdminUserController::class, 'index'])->name('index');
         Route::post('/', [AdminUserController::class, 'store'])->name('store');
         Route::patch('/{user}/status', [AdminUserController::class, 'updateStatus'])->name('status');
+        Route::patch('/{user}/password', [AdminUserController::class, 'updatePassword'])->name('password');
         Route::delete('/{user}', [AdminUserController::class, 'destroy'])->name('destroy');
     });
 

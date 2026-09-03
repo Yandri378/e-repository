@@ -345,25 +345,41 @@
     <div class="slip-panel">
         <form method="POST" action="{{ route('login.store') }}" class="auth-card">
             @csrf
-            <p class="eyebrow">Login Akun Repository</p>
-            <h1>Masuk Repository</h1>
+            @php
+                $targetRole = $role ?? null;
+            @endphp
+
+            @if (!empty($targetRole))
+                <p class="eyebrow">Portal {{ ucfirst($targetRole) }}</p>
+                <h1>Masuk sebagai {{ ucfirst($targetRole) }}</h1>
+            @else
+                <p class="eyebrow">Login Akun Repository</p>
+                <h1>Masuk Repository</h1>
+            @endif
 
             @auth
-                <div class="flash-message">
-                    Anda sedang login sebagai {{ ucfirst(auth()->user()->role) }}. Isi form ini untuk berpindah akun.
-                </div>
+                @if(auth()->user()->role !== ($targetRole ?? auth()->user()->role))
+                    <div class="flash-message">
+                        Anda sedang login sebagai <strong>{{ ucfirst(auth()->user()->role) }}</strong>.
+                        Isi form di bawah dengan akun {{ ucfirst($targetRole ?? '') }} untuk berpindah akun.
+                    </div>
+                @else
+                    <div class="flash-message">
+                        Anda sedang login sebagai {{ ucfirst(auth()->user()->role) }}. Isi form ini untuk berpindah akun.
+                    </div>
+                @endif
             @endauth
 
             @if ($errors->any())
                 <div class="error-box">{{ $errors->first() }}</div>
             @endif
 
-            @if (!empty($role))
-                <input type="hidden" name="role" value="{{ $role }}">
+            @if (!empty($targetRole))
+                <input type="hidden" name="role" value="{{ $targetRole }}">
             @endif
 
             <label>Email / NIM / NIDN
-                <input type="text" name="identifier" value="{{ old('identifier') }}" placeholder="Masukkan Email, NIM, atau NIDN" required autofocus>
+                <input type="text" name="identifier" value="{{ old('identifier') }}" placeholder="{{ $targetRole === 'mahasiswa' ? 'Masukkan Email atau NIM' : ($targetRole === 'dosen' ? 'Masukkan Email atau NIDN' : 'Masukkan Email, NIM, atau NIDN') }}" required autofocus>
             </label>
 
             <label>Password
@@ -379,6 +395,7 @@
             <p class="auth-note">Belum punya akun? Minta username dan password awal ke Admin.</p>
         </form>
     </div>
+
 
 </section>
 </body>

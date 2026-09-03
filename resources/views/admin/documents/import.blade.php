@@ -477,7 +477,7 @@
 
                                 <div>
                                     <p class="font-bold text-slate-800 text-base">Drag & drop file ZIP / RAR di sini</p>
-                                    <p class="text-xs text-slate-500 mt-1">Format file <strong>.zip</strong> atau <strong>.rar</strong> &middot; Berisi berkas PDF/DOC/RTF &middot; Maksimal 800 MB</p>
+                                    <p class="text-xs text-slate-500 mt-1">Format file <strong>.zip</strong> atau <strong>.rar</strong> &middot; Berisi berkas PDF &middot; Maksimal 800 MB</p>
                                 </div>
 
                                 {{-- Clear Solid Upload Button --}}
@@ -546,7 +546,7 @@
                     <ul class="space-y-2 text-xs text-violet-700">
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">1</span>
-                            Siapkan folder berisi berkas dokumen (PDF, DOC, DOCX, RTF, ODT, TXT).
+                            Siapkan folder berisi berkas dokumen PDF.
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">2</span>
@@ -558,11 +558,11 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">4</span>
-                            Setiap berkas dokumen dalam ZIP akan menjadi <strong>1 record data</strong> dengan status <strong>Terverifikasi</strong> (langsung dapat dicari di katalog).
+                            Setiap berkas PDF dalam ZIP akan menjadi <strong>1 record data</strong> dengan status <strong>Terverifikasi</strong> (langsung dapat dicari di katalog).
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">5</span>
-                            Nama berkas dokumen akan digunakan sebagai <strong>nama & judul</strong> sementara. Anda bisa mengeditnya nanti.
+                            Nama berkas PDF akan digunakan sebagai <strong>nama & judul</strong> sementara. Anda bisa mengeditnya nanti.
                         </li>
                     </ul>
                 </div>
@@ -573,10 +573,10 @@
                         Perhatian
                     </h3>
                     <ul class="space-y-1.5 text-xs text-amber-700">
-                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Berkas dokumen (<strong>.pdf, .doc, .docx, .rtf, .odt, .txt</strong>) di dalam ZIP yang akan diproses.</li>
-                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Berkas selain format dokumen akan diabaikan secara otomatis.</li>
+                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Berkas dokumen (<strong>.pdf</strong>) di dalam ZIP yang akan diproses.</li>
+                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Berkas selain PDF akan diabaikan secara otomatis.</li>
                         <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Ukuran ZIP maksimal <strong>800 MB</strong>.</li>
-                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Data yang diupload berstatus <strong>Pending</strong> dan perlu diverifikasi.</li>
+                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Data yang diupload berstatus <strong>Terverifikasi</strong> dan langsung dapat dicari di katalog.</li>
                     </ul>
                 </div>                </div>
             </div>

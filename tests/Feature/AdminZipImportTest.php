@@ -140,7 +140,7 @@ class AdminZipImportTest extends TestCase
             ], ['X-Requested-With' => 'XMLHttpRequest']);
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('Tidak ditemukan berkas dokumen', $response->json('message'));
+        $this->assertStringContainsString('Tidak ditemukan berkas PDF', $response->json('message'));
         $this->assertStringContainsString('gambar.png', $response->json('message'));
 
         if (file_exists($tempZipPath)) {
@@ -148,60 +148,7 @@ class AdminZipImportTest extends TestCase
         }
     }
 
-    public function test_admin_can_import_documents_from_nested_zip_archives(): void
-    {
-        Storage::fake('local');
-        Storage::fake('public');
-
-        $admin = User::factory()->create([
-            'role' => 'admin',
-            'status_akun' => 'aktif',
-        ]);
-
-        // Create an inner zip containing a PDF
-        $innerZipPath = tempnam(sys_get_temp_dir(), 'inner_') . '.zip';
-        $innerZip = new \ZipArchive();
-        $innerZip->open($innerZipPath, \ZipArchive::CREATE);
-        $innerZip->addFromString('Skripsi_Inner_Nested.pdf', '%PDF-1.4 dummy pdf');
-        $innerZip->close();
-
-        // Create outer zip containing inner zip
-        $outerZipPath = tempnam(sys_get_temp_dir(), 'outer_') . '.zip';
-        $outerZip = new \ZipArchive();
-        $outerZip->open($outerZipPath, \ZipArchive::CREATE);
-        $outerZip->addFile($innerZipPath, 'subfolder/Inner_Archive.zip');
-        $outerZip->close();
-
-        $uploadedZip = new UploadedFile(
-            $outerZipPath,
-            'nested_archive.zip',
-            'application/zip',
-            null,
-            true
-        );
-
-        $response = $this->actingAs($admin)
-            ->post(route('admin.documents.import.zip'), [
-                'kategori' => 'skripsi',
-                'file_zip' => $uploadedZip,
-            ], ['X-Requested-With' => 'XMLHttpRequest']);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success_count' => 1,
-                'kategori' => 'skripsi',
-            ]);
-
-        $this->assertDatabaseHas('repository_documents', [
-            'nama' => 'Skripsi_Inner_Nested',
-            'kategori' => 'skripsi',
-        ]);
-
-        @unlink($innerZipPath);
-        @unlink($outerZipPath);
-    }
-
-    public function test_admin_can_import_rtf_and_other_documents_from_zip(): void
+    public function test_admin_can_import_pdf_documents_from_zip(): void
     {
         Storage::fake('local');
         Storage::fake('public');
@@ -214,12 +161,12 @@ class AdminZipImportTest extends TestCase
         $tempZipPath = tempnam(sys_get_temp_dir(), 'test_zip_') . '.zip';
         $zip = new \ZipArchive();
         $zip->open($tempZipPath, \ZipArchive::CREATE);
-        $zip->addFromString('SKRIPSI JEKI ARYA DINATA 161100269.rtf', '{\rtf1\ansi Dummy RTF content}');
+        $zip->addFromString('SKRIPSI JEKI ARYA DINATA 161100269.pdf', '%PDF-1.4 Dummy PDF content');
         $zip->close();
 
         $uploadedZip = new UploadedFile(
             $tempZipPath,
-            'dokumen_rtf.zip',
+            'dokumen_pdf.zip',
             'application/zip',
             null,
             true
@@ -245,5 +192,35 @@ class AdminZipImportTest extends TestCase
         if (file_exists($tempZipPath)) {
             unlink($tempZipPath);
         }
+    }
+
+    public function test_admin_can_download_non_pdf_document(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status_akun' => 'aktif',
+        ]);
+
+        Storage::disk('local')->put('repository-documents/test.txt', 'Sample text content');
+
+        $document = \App\Models\RepositoryDocument::create([
+            'user_id' => $admin->id,
+            'kategori' => 'skripsi',
+            'jenis_input' => 'upload',
+            'nama' => 'LICENSE',
+            'tahun' => 2026,
+            'judul' => 'LICENSE',
+            'file_dokumen' => 'repository-documents/test.txt',
+            'status' => 'pending',
+            'tanggal_upload' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.documents.download', $document));
+
+        $response->assertOk();
+        $response->assertHeader('content-disposition');
     }
 }

@@ -28,6 +28,21 @@
                         Unggah karya ilmiah & penelitian Anda, serta berikan persetujuan (ACC) dokumen bimbingan mahasiswa.
                     </p>
                 </div>
+
+                <div class="flex flex-wrap gap-3 shrink-0">
+                    <div class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 text-center min-w-[90px] border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                        <p class="text-xl font-bold {{ ($menungguAcc ?? 0) > 0 ? 'text-amber-300' : 'text-white' }}">{{ $menungguAcc ?? 0 }}</p>
+                        <p class="text-[11px] text-amber-100 font-medium mt-0.5">Menunggu ACC</p>
+                    </div>
+                    <div class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 text-center min-w-[90px] border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                        <p class="text-xl font-bold text-emerald-300">{{ $sudahAcc ?? 0 }}</p>
+                        <p class="text-[11px] text-emerald-100 font-medium mt-0.5">Sudah ACC</p>
+                    </div>
+                    <div class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 text-center min-w-[90px] border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                        <p class="text-xl font-bold text-white">{{ $totalKarya ?? 0 }}</p>
+                        <p class="text-[11px] text-blue-100 font-medium mt-0.5">Karya Saya</p>
+                    </div>
+                </div>
             </div>
         </section>
 

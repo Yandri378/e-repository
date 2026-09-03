@@ -164,7 +164,7 @@ class RepositoryDocumentImport
             }
 
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            if (in_array($ext, ['pdf', 'doc', 'docx', 'rtf', 'odt', 'txt'], true)) {
+            if ($ext === 'pdf') {
                 $lowerName = strtolower($filename);
                 $this->pdfFileIndex[$lowerName] = $file->getRealPath();
             }

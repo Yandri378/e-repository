@@ -20,9 +20,15 @@ class PublicController extends Controller
             'magang' => $this->publicDocuments()->where('kategori', 'magang')->count(),
             'pkm' => $this->publicDocuments()->where('kategori', 'pkm')->count(),
             'penelitian' => $this->publicDocuments()->where('kategori', 'penelitian')->count(),
+            'total' => $this->publicDocuments()->count(),
         ];
 
-        $featured = $this->publicDocuments()->latest()->limit(6)->get();
+        $featured = $this->publicDocuments()
+            ->with(['owner', 'programStudi', 'jenisDokumen'])
+            ->latest()
+            ->limit(8)
+            ->get();
+
         $uploadStatuses = RepositorySetting::uploadStatuses();
 
         return view('pages.home', compact('stats', 'featured', 'uploadStatuses'));
@@ -362,6 +368,11 @@ class PublicController extends Controller
 
     private function publicDocuments()
     {
-        return RepositoryDocument::whereIn('status', ['terverifikasi', 'arsip']);
+        return RepositoryDocument::whereIn('status', ['terverifikasi', 'arsip'])
+            ->where(function ($query) {
+                $query->whereNull('file_dokumen')
+                    ->orWhere('file_dokumen', '')
+                    ->orWhere('file_dokumen', 'like', '%.pdf');
+            });
     }
 }

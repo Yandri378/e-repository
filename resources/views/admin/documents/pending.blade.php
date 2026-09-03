@@ -28,9 +28,14 @@
             </div>
             <div class="inline-actions">
                 @if ($document->file_dokumen)
-                    <a class="btn secondary" href="{{ route('admin.documents.download', $document) }}">Lihat PDF</a>
+                    @php
+                        $docExt = strtolower(pathinfo($document->file_dokumen, PATHINFO_EXTENSION));
+                        $isPdf = $docExt === 'pdf';
+                        $docLabel = $isPdf ? 'Lihat PDF' : 'Unduh Berkas (.' . ($docExt ?: 'file') . ')';
+                    @endphp
+                    <a class="btn secondary" href="{{ route('admin.documents.download', $document) }}" @if($isPdf) target="_blank" @endif>{{ $docLabel }}</a>
                 @else
-                    <span class="badge muted">PDF tidak ada</span>
+                    <span class="badge muted">File tidak ada</span>
                 @endif
                 @if ($document->file_project)
                     <a class="btn secondary" href="{{ route('repository.project.download', $document) }}">Download Project</a>

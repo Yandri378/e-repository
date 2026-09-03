@@ -14,7 +14,21 @@ class AuthController extends Controller
     {
         $request->session()->regenerateToken();
 
-        return view('auth.login');
+        return view('auth.login', ['role' => null]);
+    }
+
+    public function showLoginMahasiswa(Request $request)
+    {
+        $request->session()->regenerateToken();
+
+        return view('auth.login', ['role' => 'mahasiswa']);
+    }
+
+    public function showLoginDosen(Request $request)
+    {
+        $request->session()->regenerateToken();
+
+        return view('auth.login', ['role' => 'dosen']);
     }
 
     public function login(Request $request)

@@ -78,16 +78,22 @@ class DashboardController extends Controller
             abort(403, 'Unauthorized access to dosen dashboard');
         }
 
+        $dosenId = Auth::id();
+        $bimbinganQuery = RepositoryDocument::where('dosen_pembimbing_id', $dosenId)
+            ->whereIn('kategori', ['skripsi', 'magang']);
+
         return view('dashboards.dosen', [
-            'documents' => RepositoryDocument::where('user_id', Auth::id())->latest()->limit(8)->get(),
-            'approvalDocuments' => RepositoryDocument::with(['owner', 'programStudi', 'jenisDokumen'])
-                ->where('dosen_pembimbing_id', Auth::id())
+            'documents' => RepositoryDocument::where('user_id', $dosenId)->latest()->limit(8)->get(),
+            'approvalDocuments' => (clone $bimbinganQuery)->with(['owner', 'programStudi', 'jenisDokumen'])
                 ->where('status', 'pending')
                 ->latest()
                 ->limit(8)
                 ->get(),
+            'menungguAcc' => (clone $bimbinganQuery)->where('status', 'pending')->whereNull('dosen_approved_at')->count(),
+            'sudahAcc' => (clone $bimbinganQuery)->whereNotNull('dosen_approved_at')->count(),
+            'totalKarya' => RepositoryDocument::where('user_id', $dosenId)->count(),
             'uploadStatuses' => RepositorySetting::uploadStatuses(),
-            'cards' => $this->cards(Auth::id()),
+            'cards' => $this->cards($dosenId),
         ]);
     }
 
