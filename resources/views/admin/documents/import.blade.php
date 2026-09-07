@@ -417,11 +417,19 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <div class="lg:col-span-2">
                 <div class="rounded-2xl border border-violet-100 bg-white shadow-md p-6 space-y-6">
-                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" class="text-violet-600"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                        Upload File ZIP
-                    </h2>
-                    <p class="text-sm text-slate-500 -mt-3">Upload folder ZIP yang berisi file-file PDF dokumen. Setiap file PDF akan otomatis menjadi 1 record data.</p>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" class="text-violet-600"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                Upload File ZIP / RAR
+                            </h2>
+                            <p class="text-sm text-slate-500 mt-0.5">Upload hingga <strong>10 file ZIP/RAR sekaligus</strong>. Setiap file PDF di dalamnya otomatis menjadi 1 record data.</p>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                            Maks. 10 File Sekaligus
+                        </span>
+                    </div>
 
                     {{-- Alert Success Inline ZIP --}}
                     <div id="zipSuccessAlert" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
@@ -436,8 +444,31 @@
                         </div>
                     </div>
 
+                    {{-- Alert Error / Rejection Inline ZIP --}}
+                    <div id="zipErrorAlert" class="hidden rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm space-y-3">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white shrink-0 shadow-sm mt-0.5">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-bold text-red-800 text-base">Upload Belum Berhasil</p>
+                                <p id="zipErrorAlertText" class="text-sm text-red-700 mt-0.5 leading-relaxed"></p>
+                                <ul id="zipErrorFailedList" class="hidden mt-2 space-y-1 text-xs text-red-600 list-disc list-inside"></ul>
+                            </div>
+                        </div>
+                        <div class="pt-1 flex flex-wrap items-center gap-2">
+                            <button type="button" id="btnReplaceFailedZip" class="inline-flex items-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 shadow-sm transition active:scale-95 cursor-pointer">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                Ganti / Pilih Ulang File ZIP Baru
+                            </button>
+                        </div>
+                    </div>
+
                     <form method="POST" action="{{ route('admin.documents.import.zip') }}" enctype="multipart/form-data" id="zipForm" class="space-y-5">
                         @csrf
+
+                        {{-- Hidden single file input for individual replace action --}}
+                        <input type="file" id="replaceZipInput" accept=".zip,.rar,.7z" class="hidden">
 
                         {{-- Pilih Kategori ZIP --}}
                         <div>
@@ -462,13 +493,17 @@
 
                         {{-- ZIP Drop Zone & Button --}}
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">File ZIP <span class="text-red-500">*</span></label>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-semibold text-slate-700">Berkas ZIP / RAR <span class="text-red-500">*</span></label>
+                                <span id="zipCountBadge" class="hidden text-xs font-bold text-violet-600 bg-violet-50 border border-violet-200 px-2.5 py-0.5 rounded-full">0/10 file dipilih</span>
+                            </div>
+                            
                             <div id="zipDropZone"
-                                 class="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50/50 px-6 py-9 text-center transition-all duration-200 hover:border-violet-500 hover:bg-violet-100/50">
+                                 class="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50/50 px-6 py-8 text-center transition-all duration-200 hover:border-violet-500 hover:bg-violet-100/50">
 
                                 {{-- Folder Icon --}}
-                                <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 shadow-sm border border-violet-200/60">
-                                    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 shadow-sm border border-violet-200/60">
+                                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8">
                                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                                         <line x1="12" y1="11" x2="12" y2="17"/>
                                         <polyline points="9 14 12 11 15 14"/>
@@ -476,14 +511,14 @@
                                 </div>
 
                                 <div>
-                                    <p class="font-bold text-slate-800 text-base">Drag & drop file ZIP / RAR di sini</p>
-                                    <p class="text-xs text-slate-500 mt-1">Format file <strong>.zip</strong> atau <strong>.rar</strong> &middot; Berisi berkas PDF &middot; Maksimal 800 MB</p>
+                                    <p class="font-bold text-slate-800 text-sm sm:text-base">Drag & drop hingga 10 file ZIP / RAR di sini</p>
+                                    <p class="text-xs text-slate-500 mt-1">Format <strong>.zip</strong>, <strong>.rar</strong>, atau <strong>.7z</strong> &middot; Maks. 10 file &middot; Maks. 800 MB/file</p>
                                 </div>
 
-                                {{-- Clear Solid Upload Button --}}
+                                {{-- Choose ZIP Button --}}
                                 <button type="button" id="btnChooseZip"
-                                        class="mt-2 inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-600 hover:from-blue-600 hover:to-violet-700 active:from-blue-700 active:to-violet-800 text-white font-extrabold text-sm px-7 py-3.5 shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-xl active:scale-95">
-                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" class="text-white">
+                                        class="mt-1 inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 active:from-blue-800 active:to-violet-800 text-white font-extrabold text-xs sm:text-sm px-6 py-3 shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-xl active:scale-95">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" class="text-white">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                         <polyline points="17 8 12 3 7 8"/>
                                         <line x1="12" y1="3" x2="12" y2="15"/>
@@ -491,16 +526,23 @@
                                     <span id="btnChooseZipText">Pilih File ZIP / RAR Dari Komputer</span>
                                 </button>
 
-                                {{-- Hidden Input --}}
-                                <input type="file" name="file_zip" id="zipFileInput" accept=".zip,.rar,.7z" class="hidden">
+                                {{-- Hidden Multi-File Input --}}
+                                <input type="file" name="files_zip[]" id="zipFileInput" multiple accept=".zip,.rar,.7z" class="hidden">
+                            </div>
 
-                                {{-- Selected File Badge --}}
-                                <div id="zipFileName" class="hidden mt-2 items-center gap-2 rounded-xl bg-violet-700 px-4 py-2 text-sm text-white font-semibold shadow-md">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                                    </svg>
-                                    <span id="zipFileNameText"></span>
-                                    <button type="button" id="removeZipFileBtn" class="ml-2 text-violet-200 hover:text-white font-bold text-base">&times;</button>
+                            {{-- Selected Files Container List --}}
+                            <div id="zipFilesListContainer" class="hidden mt-4 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="text-violet-600"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                                        Daftar File yang Dipilih (<span id="zipFilesCountText">0</span> file)
+                                    </p>
+                                    <button type="button" id="clearAllZipBtn" class="text-xs font-semibold text-red-500 hover:text-red-700 transition">
+                                        Hapus Semua
+                                    </button>
+                                </div>
+                                <div id="zipFilesCards" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
+                                    {{-- JS generates file badges here --}}
                                 </div>
                             </div>
                         </div>
@@ -520,7 +562,7 @@
                         </div>
 
                         <p id="zipSaveHint" class="rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 text-center text-xs font-medium text-violet-700">
-                            Pilih file ZIP terlebih dahulu, lalu tekan tombol simpan untuk memproses datanya.
+                            Pilih file ZIP/RAR terlebih dahulu (maksimal 10 file), lalu tekan tombol simpan untuk memproses datanya.
                         </p>
 
                         <button type="submit" id="zipSubmitBtn" disabled
@@ -530,7 +572,7 @@
                                 <line x1="12" y1="11" x2="12" y2="17"/>
                                 <polyline points="9 14 12 11 15 14"/>
                             </svg>
-                            Simpan &amp; Proses Data ZIP
+                            <span id="zipSubmitBtnText">Simpan &amp; Proses Data ZIP</span>
                         </button>
                     </form>
                 </div>
@@ -541,28 +583,28 @@
                 <div class="rounded-2xl border border-violet-200 bg-violet-50 p-5">
                     <h3 class="font-bold text-violet-800 flex items-center gap-2 mb-3">
                         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Panduan Upload ZIP
+                        Panduan Upload ZIP Massal
                     </h3>
                     <ul class="space-y-2 text-xs text-violet-700">
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">1</span>
-                            Siapkan folder berisi berkas dokumen PDF.
+                            Siapkan satu atau beberapa folder berisi berkas dokumen PDF.
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">2</span>
-                            Kompres folder tersebut menjadi file <strong>.zip</strong> atau <strong>.rar</strong>.
+                            Kompres menjadi file <strong>.zip</strong> atau <strong>.rar</strong>.
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">3</span>
-                            Pilih <strong>kategori</strong> dokumen, lalu upload file ZIP/RAR.
+                            Pilih <strong>kategori</strong> dokumen, lalu pilih atau drag <strong>hingga 10 file ZIP/RAR</strong> sekaligus.
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">4</span>
-                            Setiap berkas PDF dalam ZIP akan menjadi <strong>1 record data</strong> dengan status <strong>Terverifikasi</strong> (langsung dapat dicari di katalog).
+                            Setiap berkas PDF di dalam semua file ZIP akan diproses otomatis menjadi data berstatus <strong>Terverifikasi</strong>.
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold mt-0.5">5</span>
-                            Nama berkas PDF akan digunakan sebagai <strong>nama & judul</strong> sementara. Anda bisa mengeditnya nanti.
+                            Nama berkas PDF otomatis digunakan sebagai <strong>nama & judul</strong> sementara.
                         </li>
                     </ul>
                 </div>
@@ -573,12 +615,12 @@
                         Perhatian
                     </h3>
                     <ul class="space-y-1.5 text-xs text-amber-700">
+                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Maksimal <strong>10 file ZIP/RAR</strong> dalam satu kali upload.</li>
                         <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Berkas dokumen (<strong>.pdf</strong>) di dalam ZIP yang akan diproses.</li>
                         <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Berkas selain PDF akan diabaikan secara otomatis.</li>
-                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Ukuran ZIP maksimal <strong>800 MB</strong>.</li>
-                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Data yang diupload berstatus <strong>Terverifikasi</strong> dan langsung dapat dicari di katalog.</li>
+                        <li class="flex items-start gap-1.5"><span class="mt-0.5 shrink-0">•</span>Ukuran tiap file ZIP maksimal <strong>800 MB</strong>.</li>
                     </ul>
-                </div>                </div>
+                </div>
             </div>
         </div>
     </div>
@@ -723,52 +765,251 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ========== ZIP: Button & Drag & drop ==========
-    const zipDropZone  = document.getElementById('zipDropZone');
-    const zipFileInput = document.getElementById('zipFileInput');
-    const zipFileName  = document.getElementById('zipFileName');
-    const zipFileNameText = document.getElementById('zipFileNameText');
-    const btnChooseZip = document.getElementById('btnChooseZip');
-    const btnChooseZipText = document.getElementById('btnChooseZipText');
-    const removeZipFileBtn = document.getElementById('removeZipFileBtn');
-    const zipSubmitBtn = document.getElementById('zipSubmitBtn');
-    const zipSaveHint = document.getElementById('zipSaveHint');
-    const zipSubmitReadyClass = 'w-full flex items-center justify-center gap-2.5 rounded-xl border border-blue-800 bg-blue-700 hover:bg-blue-800 text-white font-extrabold text-base px-6 py-4 shadow-lg shadow-blue-700/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] cursor-pointer opacity-100';
+    // ========== ZIP: Multi-File Selection, Drag & Drop & Replacement ==========
+    const zipDropZone           = document.getElementById('zipDropZone');
+    const zipFileInput          = document.getElementById('zipFileInput');
+    const replaceZipInput       = document.getElementById('replaceZipInput');
+    const zipFilesListContainer = document.getElementById('zipFilesListContainer');
+    const zipFilesCards         = document.getElementById('zipFilesCards');
+    const zipFilesCountText     = document.getElementById('zipFilesCountText');
+    const zipCountBadge         = document.getElementById('zipCountBadge');
+    const clearAllZipBtn        = document.getElementById('clearAllZipBtn');
+    const btnChooseZip          = document.getElementById('btnChooseZip');
+    const btnChooseZipText      = document.getElementById('btnChooseZipText');
+    const zipSubmitBtn          = document.getElementById('zipSubmitBtn');
+    const zipSaveHint           = document.getElementById('zipSaveHint');
+    const zipErrorAlert         = document.getElementById('zipErrorAlert');
+    const zipErrorAlertText     = document.getElementById('zipErrorAlertText');
+    const zipErrorFailedList    = document.getElementById('zipErrorFailedList');
+    const btnReplaceFailedZip   = document.getElementById('btnReplaceFailedZip');
+
+    const zipSubmitReadyClass = 'w-full flex items-center justify-center gap-2.5 rounded-xl border border-violet-700 bg-gradient-to-r from-violet-700 to-indigo-700 hover:from-violet-800 hover:to-indigo-800 text-white font-extrabold text-base px-6 py-4 shadow-lg shadow-violet-700/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] cursor-pointer opacity-100';
     const zipSubmitDisabledClass = 'w-full flex items-center justify-center gap-2.5 rounded-xl bg-slate-200 border border-slate-300 text-slate-500 font-bold text-base px-6 py-4 shadow-inner transition-all duration-200 cursor-not-allowed opacity-80';
     const zipSubmitLoadingClass = 'w-full flex items-center justify-center gap-2.5 rounded-xl border border-slate-950 bg-slate-900 text-white font-extrabold text-base px-6 py-4 shadow-lg shadow-slate-900/30 transition-all duration-200 cursor-wait opacity-100';
 
-    // Hardcoded HTML strings for each button state — avoids all innerHTML/SVG className issues
-    const ZIP_BTN_NORMAL_HTML = '<svg class="shrink-0 text-white" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 11 15 14"/></svg><span class="text-white">Simpan & Proses Data ZIP</span>';
-    const ZIP_BTN_LOADING_HTML = '<svg class="animate-spin shrink-0 text-white" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg><span class="text-white">Mengekstrak & Memproses ZIP...</span>';
+    const MAX_ZIP_SIZE_BYTES = 800 * 1024 * 1024; // 800 MB
+    let selectedZipFiles = [];
+    let replacingIndex = null;
 
-    function updateZipSubmitState(isReady) {
-        if (!zipSubmitBtn) return;
-
-        zipSubmitBtn.disabled = !isReady;
-        zipSubmitBtn.className = isReady ? zipSubmitReadyClass : zipSubmitDisabledClass;
-        zipSubmitBtn.innerHTML = ZIP_BTN_NORMAL_HTML;
-
-        if (btnChooseZipText) {
-            btnChooseZipText.textContent = isReady ? 'Ganti File Arsip (ZIP/RAR)' : 'Pilih File ZIP / RAR Dari Komputer';
-        }
-
-        if (zipSaveHint) {
-            zipSaveHint.textContent = isReady
-                ? 'File arsip sudah dipilih. Tekan tombol simpan di bawah untuk memproses data.'
-                : 'Pilih file ZIP/RAR terlebih dahulu, lalu tekan tombol simpan untuk memproses datanya.';
-            zipSaveHint.classList.toggle('border-emerald-200', isReady);
-            zipSaveHint.classList.toggle('bg-emerald-50', isReady);
-            zipSaveHint.classList.toggle('text-emerald-700', isReady);
-            zipSaveHint.classList.toggle('border-violet-100', !isReady);
-            zipSaveHint.classList.toggle('bg-violet-50', !isReady);
-            zipSaveHint.classList.toggle('text-violet-700', !isReady);
-        }
+    function formatFileSize(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
     function isZipFile(file) {
         if (!file || !file.name) return false;
         const fn = file.name.toLowerCase();
         return fn.endsWith('.zip') || fn.endsWith('.rar') || fn.endsWith('.7z');
+    }
+
+    function validateZipFile(file) {
+        if (!isZipFile(file)) {
+            return { valid: false, reason: 'Format bukan .zip/.rar/.7z' };
+        }
+        if (file.size > MAX_ZIP_SIZE_BYTES) {
+            return { valid: false, reason: 'Ukuran > 800 MB' };
+        }
+        return { valid: true, reason: 'Siap diupload' };
+    }
+
+    function syncZipInputFiles() {
+        if (!zipFileInput) return;
+        const dt = new DataTransfer();
+        selectedZipFiles.forEach(f => dt.items.add(f));
+        zipFileInput.files = dt.files;
+    }
+
+    function updateZipSubmitState(isReady) {
+        if (!zipSubmitBtn) return;
+
+        const count = selectedZipFiles.length;
+        const hasInvalidFile = selectedZipFiles.some(f => !validateZipFile(f).valid);
+        const canSubmit = isReady && count > 0 && !hasInvalidFile;
+
+        zipSubmitBtn.disabled = !canSubmit;
+        zipSubmitBtn.className = canSubmit ? zipSubmitReadyClass : zipSubmitDisabledClass;
+
+        const btnText = count > 0 
+            ? `Simpan & Proses ${count} File ZIP / RAR`
+            : 'Simpan & Proses Data ZIP';
+
+        zipSubmitBtn.innerHTML = `<svg class="shrink-0 text-white" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 11 15 14"/></svg><span class="text-white">${btnText}</span>`;
+
+        if (btnChooseZipText) {
+            btnChooseZipText.textContent = count > 0 ? `Tambah File ZIP / RAR (${count}/10)` : 'Pilih File ZIP / RAR Dari Komputer';
+        }
+
+        if (zipSaveHint) {
+            if (hasInvalidFile) {
+                zipSaveHint.textContent = 'Ada file yang tidak memenuhi syarat (format salah atau > 800 MB). Silakan klik tombol "Ganti" pada file tersebut atau hapus untuk melanjutkan.';
+                zipSaveHint.classList.add('border-amber-300', 'bg-amber-50', 'text-amber-800');
+                zipSaveHint.classList.remove('border-emerald-200', 'bg-emerald-50', 'text-emerald-700', 'border-violet-100', 'bg-violet-50', 'text-violet-700');
+            } else if (count > 0) {
+                zipSaveHint.textContent = `${count} file arsip siap diproses. Tekan tombol simpan di bawah untuk mengekstrak dan menyimpan data dokumen.`;
+                zipSaveHint.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+                zipSaveHint.classList.remove('border-amber-300', 'bg-amber-50', 'text-amber-800', 'border-violet-100', 'bg-violet-50', 'text-violet-700');
+            } else {
+                zipSaveHint.textContent = 'Pilih file ZIP/RAR terlebih dahulu (maksimal 10 file), lalu tekan tombol simpan untuk memproses datanya.';
+                zipSaveHint.classList.remove('border-emerald-200', 'bg-emerald-50', 'text-emerald-700', 'border-amber-300', 'bg-amber-50', 'text-amber-800');
+                zipSaveHint.classList.add('border-violet-100', 'bg-violet-50', 'text-violet-700');
+            }
+        }
+    }
+
+    function renderZipFilesList() {
+        if (!zipFilesCards || !zipFilesListContainer) return;
+
+        zipFilesCards.innerHTML = '';
+        const count = selectedZipFiles.length;
+
+        if (count === 0) {
+            zipFilesListContainer.classList.add('hidden');
+            if (zipCountBadge) zipCountBadge.classList.add('hidden');
+            if (zipDropZone) {
+                zipDropZone.classList.remove('border-violet-500', 'bg-violet-100/50');
+            }
+            syncZipInputFiles();
+            updateZipSubmitState(false);
+            return;
+        }
+
+        zipFilesListContainer.classList.remove('hidden');
+        if (zipCountBadge) {
+            zipCountBadge.textContent = `${count}/10 file dipilih`;
+            zipCountBadge.classList.remove('hidden');
+        }
+        if (zipFilesCountText) {
+            zipFilesCountText.textContent = count;
+        }
+        if (zipDropZone) {
+            zipDropZone.classList.add('border-violet-500', 'bg-violet-50');
+        }
+
+        selectedZipFiles.forEach((file, idx) => {
+            const validation = validateZipFile(file);
+            const isValid = validation.valid;
+            const card = document.createElement('div');
+
+            card.className = `flex items-center justify-between gap-2 p-3 rounded-xl border ${isValid ? 'border-violet-200 bg-violet-50/80 hover:border-violet-300' : 'border-red-300 bg-red-50/90 shadow-xs'} transition`;
+            card.innerHTML = `
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isValid ? 'bg-violet-600' : 'bg-red-500'} text-white font-bold text-xs shadow-xs">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-800 truncate" title="${file.name}">${file.name}</p>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-[10px] font-medium text-slate-500">${formatFileSize(file.size)}</span>
+                            ${!isValid ? `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded border border-red-200">${validation.reason}</span>` : `<span class="text-[10px] font-semibold text-emerald-600 flex items-center gap-1"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Siap</span>`}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" data-index="${idx}" class="replace-zip-item inline-flex items-center gap-1 text-xs font-bold ${isValid ? 'text-violet-700 bg-white border border-violet-200 hover:bg-violet-100 hover:border-violet-300' : 'text-white bg-blue-600 hover:bg-blue-700 shadow-xs'} px-2.5 py-1.5 rounded-lg transition active:scale-95 cursor-pointer" title="Ganti file ini dengan file ZIP/RAR baru">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <span>Ganti</span>
+                    </button>
+                    <button type="button" data-index="${idx}" class="remove-zip-item h-7 w-7 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-100 flex items-center justify-center transition font-bold text-base cursor-pointer" title="Hapus file ini">&times;</button>
+                </div>
+            `;
+            zipFilesCards.appendChild(card);
+        });
+
+        // Event listener for individual "Ganti" button
+        zipFilesCards.querySelectorAll('.replace-zip-item').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                replacingIndex = parseInt(this.dataset.index, 10);
+                if (replaceZipInput) {
+                    replaceZipInput.value = '';
+                    replaceZipInput.click();
+                }
+            });
+        });
+
+        // Event listener for individual "Hapus" button
+        zipFilesCards.querySelectorAll('.remove-zip-item').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const index = parseInt(this.dataset.index, 10);
+                if (!isNaN(index) && index >= 0 && index < selectedZipFiles.length) {
+                    selectedZipFiles.splice(index, 1);
+                    renderZipFilesList();
+                }
+            });
+        });
+
+        syncZipInputFiles();
+        updateZipSubmitState(true);
+    }
+
+    // Handler when single replacement file is selected
+    if (replaceZipInput) {
+        replaceZipInput.addEventListener('change', function () {
+            if (replacingIndex !== null && this.files && this.files.length) {
+                const newFile = this.files[0];
+                if (!isZipFile(newFile)) {
+                    alert('File pengganti harus berformat .zip, .rar, atau .7z.');
+                    return;
+                }
+                selectedZipFiles[replacingIndex] = newFile;
+                replacingIndex = null;
+                renderZipFilesList();
+            }
+        });
+    }
+
+    // Button to replace failed ZIP files from inline error alert
+    if (btnReplaceFailedZip) {
+        btnReplaceFailedZip.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (zipFileInput) {
+                zipFileInput.click();
+            }
+        });
+    }
+
+    function addZipFiles(files) {
+        if (!files || !files.length) return;
+
+        let nonZipCount = 0;
+        let limitReached = false;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (!isZipFile(file)) {
+                nonZipCount++;
+                continue;
+            }
+
+            // Check duplicate by name and size
+            const isDuplicate = selectedZipFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified);
+            if (isDuplicate) {
+                continue;
+            }
+
+            if (selectedZipFiles.length >= 10) {
+                limitReached = true;
+                break;
+            }
+
+            selectedZipFiles.push(file);
+        }
+
+        if (nonZipCount > 0) {
+            alert(`${nonZipCount} berkas diabaikan karena bukan format .zip, .rar, atau .7z.`);
+        }
+
+        if (limitReached) {
+            alert('Maksimal 10 berkas ZIP/RAR yang dapat diunggah sekaligus. Berkas selebihnya diabaikan.');
+        }
+
+        renderZipFilesList();
     }
 
     if (btnChooseZip && zipFileInput) {
@@ -778,77 +1019,50 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (removeZipFileBtn && zipFileInput) {
-        removeZipFileBtn.addEventListener('click', function (e) {
+    if (clearAllZipBtn) {
+        clearAllZipBtn.addEventListener('click', function (e) {
             e.stopPropagation();
-            zipFileInput.value = '';
-            zipFileName.classList.add('hidden');
-            zipFileName.classList.remove('flex');
-            updateZipSubmitState(false);
-            if (zipDropZone) {
-                zipDropZone.classList.remove('border-violet-500', 'bg-violet-50');
-            }
+            selectedZipFiles = [];
+            renderZipFilesList();
         });
     }
 
     if (zipFileInput) {
         zipFileInput.addEventListener('change', function () {
-            if (this.files.length) {
-                if (!isZipFile(this.files[0])) {
-                    alert('File harus berformat .zip atau .rar.');
-                    this.value = '';
-                    updateZipSubmitState(false);
-                    return;
-                }
-                zipFileNameText.textContent = this.files[0].name;
-                zipFileName.classList.remove('hidden');
-                zipFileName.classList.add('flex');
-                zipDropZone.classList.add('border-violet-500', 'bg-violet-50');
-                updateZipSubmitState(true);
+            if (this.files && this.files.length) {
+                addZipFiles(this.files);
             }
         });
     }
 
     if (zipDropZone) {
         zipDropZone.addEventListener('click', function (e) {
-            if (e.target !== removeZipFileBtn && !removeZipFileBtn?.contains(e.target)) {
+            if (!e.target.closest('button')) {
                 zipFileInput.click();
             }
         });
+
         ['dragenter', 'dragover'].forEach(e => {
             zipDropZone.addEventListener(e, ev => {
                 ev.preventDefault();
-                zipDropZone.classList.add('border-violet-500', 'bg-violet-100/60', 'scale-[1.01]');
+                zipDropZone.classList.add('border-violet-500', 'bg-violet-100/70', 'scale-[1.01]');
             });
         });
+
         ['dragleave', 'drop'].forEach(e => {
             zipDropZone.addEventListener(e, ev => {
                 ev.preventDefault();
-                zipDropZone.classList.remove('border-violet-500', 'bg-violet-100/60', 'scale-[1.01]');
+                zipDropZone.classList.remove('border-violet-500', 'bg-violet-100/70', 'scale-[1.01]');
             });
         });
+
         zipDropZone.addEventListener('drop', function (e) {
             e.preventDefault();
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                if (!isZipFile(file)) {
-                    alert('File harus berformat .zip atau .rar.');
-                    updateZipSubmitState(false);
-                    return;
-                }
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                zipFileInput.files = dt.files;
-                zipFileNameText.textContent = file.name;
-                zipFileName.classList.remove('hidden');
-                zipFileName.classList.add('flex');
-                zipDropZone.classList.add('border-violet-500', 'bg-violet-50');
-                updateZipSubmitState(true);
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+                addZipFiles(e.dataTransfer.files);
             }
         });
     }
-
-    updateZipSubmitState(Boolean(zipFileInput && zipFileInput.files.length));
 
     // ========== Radio kategori styling (Excel tab) ==========
     document.querySelectorAll('.kategori-radio').forEach(radio => {
@@ -897,10 +1111,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const status = document.getElementById(statusId);
             const defaultButtonHtml = btn ? btn.innerHTML : '';
 
-            if (formId === 'zipForm' && (!zipFileInput || !zipFileInput.files.length)) {
-                alert('Silakan pilih file ZIP terlebih dahulu sebelum menyimpan.');
-                updateZipSubmitState(false);
-                return;
+            if (formId === 'zipForm') {
+                syncZipInputFiles();
+                if (selectedZipFiles.length === 0) {
+                    alert('Silakan pilih setidaknya 1 file ZIP/RAR terlebih dahulu sebelum menyimpan (maksimal 10 file).');
+                    updateZipSubmitState(false);
+                    return;
+                }
+
+                const hasInvalid = selectedZipFiles.some(f => !validateZipFile(f).valid);
+                if (hasInvalid) {
+                    alert('Terdapat berkas yang tidak memenuhi syarat. Harap ganti atau hapus berkas yang bertanda merah sebelum menyimpan.');
+                    return;
+                }
+
+                if (zipErrorAlert) zipErrorAlert.classList.add('hidden');
             }
 
             if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
@@ -914,7 +1139,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.disabled = true;
                 if (formId === 'zipForm') {
                     btn.className = zipSubmitLoadingClass;
-                    btn.innerHTML = ZIP_BTN_LOADING_HTML;
+                    btn.innerHTML = `<svg class="animate-spin shrink-0 text-white" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg><span class="text-white">Mengekstrak & Memproses ${selectedZipFiles.length} Berkas ZIP...</span>`;
                 } else {
                     btn.classList.add('opacity-75', 'cursor-not-allowed');
                     btn.innerHTML = '<svg class="animate-spin" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg> ' + loadingText;
@@ -936,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (p < 100) {
                             status.innerHTML = '<svg class="animate-spin inline mr-1" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg> Mengunggah berkas... ' + p + '%';
                         } else {
-                            status.innerHTML = '<svg class="animate-spin inline mr-1" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg> Upload 100%! Memproses data di server...';
+                            status.innerHTML = '<svg class="animate-spin inline mr-1" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg> Upload 100%! Mengekstrak & memproses data dokumen di server...';
                         }
                     }
                 }
@@ -946,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!btn) return;
                 btn.disabled = false;
                 if (formId === 'zipForm') {
-                    updateZipSubmitState(Boolean(zipFileInput && zipFileInput.files.length));
+                    updateZipSubmitState(selectedZipFiles.length > 0);
                 } else {
                     btn.classList.remove('opacity-75', 'cursor-not-allowed');
                     btn.innerHTML = defaultButtonHtml;
@@ -985,18 +1210,42 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.location.href = targetUrl.toString();
                 } else {
                     let errorMessage = 'Terjadi kesalahan saat mengunggah (HTTP ' + xhr.status + '). Silakan coba lagi.';
+                    let failureList = [];
                     const contentType = xhr.getResponseHeader('Content-Type') || '';
 
                     if (contentType.includes('application/json')) {
                         try {
                             const response = JSON.parse(xhr.responseText);
                             errorMessage = response.message || errorMessage;
+                            if (Array.isArray(response.archive_failures) && response.archive_failures.length > 0) {
+                                failureList = response.archive_failures;
+                            }
                         } catch (error) {
                             // Keep default message when the JSON response cannot be parsed.
                         }
                     }
 
-                    alert(errorMessage);
+                    if (formId === 'zipForm' && zipErrorAlert && zipErrorAlertText) {
+                        zipErrorAlertText.textContent = errorMessage;
+                        if (zipErrorFailedList) {
+                            zipErrorFailedList.innerHTML = '';
+                            if (failureList.length > 0) {
+                                failureList.forEach(failText => {
+                                    const li = document.createElement('li');
+                                    li.textContent = failText;
+                                    zipErrorFailedList.appendChild(li);
+                                });
+                                zipErrorFailedList.classList.remove('hidden');
+                            } else {
+                                zipErrorFailedList.classList.add('hidden');
+                            }
+                        }
+                        zipErrorAlert.classList.remove('hidden');
+                        zipErrorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        alert(errorMessage);
+                    }
+
                     restoreButton();
                 }
             };

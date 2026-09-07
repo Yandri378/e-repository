@@ -12,6 +12,7 @@ use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -452,7 +453,7 @@ class AdminDocumentController extends Controller
         }
 
         $resolvedPath = $this->resolveStoredFilePath($filePath);
-        abort_if(! $resolvedPath, 404, 'File dokumen tidak ditemukan.');
+        abort_if(!$resolvedPath, 404, 'File dokumen tidak ditemukan.');
 
         $extension = strtolower(pathinfo($resolvedPath, PATHINFO_EXTENSION));
         $safeExtension = $extension ?: 'pdf';
@@ -912,10 +913,12 @@ class AdminDocumentController extends Controller
                 @exec($cmd7z, $output, $resultCode);
                 $contents = @scandir($destinationDir);
                 if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
-                    if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                    if ($tempNamedPath && file_exists($tempNamedPath))
+                        @unlink($tempNamedPath);
                     return true;
                 }
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
 
             // Try tar command (tar.exe on Windows, tar on Linux)
             try {
@@ -924,10 +927,12 @@ class AdminDocumentController extends Controller
                 @exec($cmdTar, $output, $resultCode);
                 $contents = @scandir($destinationDir);
                 if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
-                    if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                    if ($tempNamedPath && file_exists($tempNamedPath))
+                        @unlink($tempNamedPath);
                     return true;
                 }
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
 
             // Try unzip command on Linux/Unix
             if (!defined('PHP_OS_FAMILY') || PHP_OS_FAMILY !== 'Windows') {
@@ -936,10 +941,12 @@ class AdminDocumentController extends Controller
                     @exec($cmdUnzip, $output, $resultCode);
                     $contents = @scandir($destinationDir);
                     if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
-                        if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                        if ($tempNamedPath && file_exists($tempNamedPath))
+                            @unlink($tempNamedPath);
                         return true;
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
 
                 // Try unrar command for RAR files
                 try {
@@ -947,10 +954,12 @@ class AdminDocumentController extends Controller
                     @exec($cmdUnrar, $output, $resultCode);
                     $contents = @scandir($destinationDir);
                     if ($resultCode === 0 && is_dir($destinationDir) && $contents !== false && count($contents) > 2) {
-                        if ($tempNamedPath && file_exists($tempNamedPath)) @unlink($tempNamedPath);
+                        if ($tempNamedPath && file_exists($tempNamedPath))
+                            @unlink($tempNamedPath);
                         return true;
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
 
             if ($tempNamedPath && file_exists($tempNamedPath)) {
@@ -963,238 +972,268 @@ class AdminDocumentController extends Controller
     }
 
     /**
-     * Proses upload file ZIP / RAR berisi file-file PDF.
+     * Proses upload file ZIP / RAR berisi file-file PDF (Mendukung hingga 10 file sekaligus).
      * Setiap PDF di dalam ZIP/RAR menjadi 1 record RepositoryDocument.
      */
     public function importZip(Request $request)
     {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(300);
+
         $request->validate([
             'kategori' => ['required', 'in:skripsi,magang,pkm,penelitian'],
-            'file_zip' => ['required', 'file', 'extensions:zip,rar,7z', 'max:819200'], // max 800 MB
+            'files_zip' => ['nullable', 'array', 'max:10'],
+            'files_zip.*' => ['file', 'extensions:zip,rar,7z', 'max:819200'], // max 800 MB per file
+            'file_zip' => ['nullable', 'file', 'extensions:zip,rar,7z', 'max:819200'],
         ], [
-            'file_zip.required' => 'File ZIP/RAR wajib dipilih.',
-            'file_zip.uploaded' => 'File ZIP/RAR gagal diupload oleh server. Periksa batas upload hosting (upload_max_filesize dan post_max_size).',
+            'files_zip.max' => 'Maksimal 10 file ZIP/RAR yang dapat diunggah sekaligus.',
+            'files_zip.*.uploaded' => 'File arsip gagal diupload oleh server. Periksa batas upload hosting.',
+            'files_zip.*.extensions' => 'Semua file harus berekstensi .zip, .rar, atau .7z.',
+            'files_zip.*.max' => 'Ukuran setiap file ZIP/RAR maksimal 800 MB.',
+            'file_zip.uploaded' => 'File ZIP/RAR gagal diupload oleh server. Periksa batas upload hosting.',
             'file_zip.extensions' => 'File harus berekstensi .zip, .rar, atau .7z.',
-            'file_zip.max'      => 'Ukuran file ZIP/RAR maksimal 800 MB.',
+            'file_zip.max' => 'Ukuran file ZIP/RAR maksimal 800 MB.',
         ]);
 
         $kategori = $request->kategori;
-        /** @var UploadedFile $uploaded */
-        $uploaded = $request->file('file_zip');
 
-        // Clean up any old leftover temp_zip directories before proceeding
+        // Kumpulkan semua file arsip yang diunggah (mendukung files_zip[] dan fallback file_zip)
+        $uploadedArchives = [];
+        if ($request->hasFile('files_zip')) {
+            $files = $request->file('files_zip');
+            if (is_array($files)) {
+                $uploadedArchives = array_values(array_filter($files, fn($f) => $f instanceof UploadedFile));
+            }
+        }
+
+        if (empty($uploadedArchives) && $request->hasFile('file_zip')) {
+            $singleFile = $request->file('file_zip');
+            if ($singleFile instanceof UploadedFile) {
+                $uploadedArchives[] = $singleFile;
+            }
+        }
+
+        if (empty($uploadedArchives)) {
+            $msg = 'Silakan pilih setidaknya 1 file ZIP/RAR untuk diunggah (maksimal 10 file).';
+            if ($request->ajax()) {
+                return response()->json(['message' => $msg], 422);
+            }
+            return back()->withInput()->with('import_error', $msg);
+        }
+
+        if (count($uploadedArchives) > 10) {
+            $msg = 'Maksimal 10 file ZIP/RAR yang dapat diunggah sekaligus.';
+            if ($request->ajax()) {
+                return response()->json(['message' => $msg], 422);
+            }
+            return back()->withInput()->with('import_error', $msg);
+        }
+
+        // Bersihkan direktori temp usang
         $this->cleanStaleTempDirectories();
 
-        $extractDir = storage_path('app/temp_zip_' . Str::random(16));
-        $successCount = 0;
-        $errorRows = [];
+        $totalSuccessCount = 0;
+        $allErrorRows = [];
+        $allFoundFilesGlobal = [];
+        $archiveFailures = [];
+        $processedArchivesCount = 0;
 
-        try {
-            $realPath = $uploaded->getRealPath() ?: $uploaded->getPathname();
-            $extractedOk = $this->extractArchiveFile($realPath, $extractDir, $uploaded->getClientOriginalExtension());
+        foreach ($uploadedArchives as $archiveIndex => $uploadedArchive) {
+            $archiveOriginalName = $uploadedArchive->getClientOriginalName();
+            $extractDir = storage_path('app/temp_zip_' . Str::random(16));
 
-            if (!$extractedOk) {
-                if ($request->ajax()) {
-                    return response()->json([
-                        'message' => 'Gagal membuka file ZIP/RAR. Pastikan file tidak rusak.',
-                    ], 422);
+            try {
+                $realPath = $uploadedArchive->getRealPath() ?: $uploadedArchive->getPathname();
+                $extractedOk = $this->extractArchiveFile($realPath, $extractDir, $uploadedArchive->getClientOriginalExtension());
+
+                if (!$extractedOk) {
+                    $archiveFailures[] = "Gagal membuka arsip {$archiveOriginalName}.";
+                    continue;
                 }
 
-                return back()
-                    ->withInput()
-                    ->with('import_error', 'Gagal membuka file ZIP/RAR. Pastikan file tidak rusak.');
-            }
+                // Unpack nested archives jika ada
+                for ($pass = 0; $pass < 3; $pass++) {
+                    $nestedArchives = [];
+                    $iterator = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS)
+                    );
+                    /** @var SplFileInfo $file */
+                    foreach ($iterator as $file) {
+                        if (!$file->isFile()) {
+                            continue;
+                        }
+                        $fn = $file->getFilename();
+                        $pn = $file->getPathname();
+                        if (str_starts_with($fn, '._') || str_contains($pn, '__MACOSX')) {
+                            continue;
+                        }
 
-            // Unpack any nested archive files (.rar, .zip, .7z) found inside the extracted directory
-            for ($pass = 0; $pass < 3; $pass++) {
-                $nestedArchives = [];
+                        $ext = strtolower(pathinfo($fn, PATHINFO_EXTENSION));
+                        if (in_array($ext, ['rar', 'zip', '7z', 'tar', 'gz'], true)) {
+                            $nestedArchives[] = $file->getRealPath();
+                        }
+                    }
+
+                    if (empty($nestedArchives)) {
+                        break;
+                    }
+
+                    foreach ($nestedArchives as $archivePath) {
+                        $subDir = dirname($archivePath) . '/unpacked_' . Str::random(8);
+                        $this->extractArchiveFile($archivePath, $subDir, pathinfo($archivePath, PATHINFO_EXTENSION));
+                        @unlink($archivePath);
+                    }
+                }
+
+                // Scan all PDF files recursively
+                $docFiles = [];
                 $iterator = new RecursiveIteratorIterator(
                     new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS)
                 );
                 /** @var SplFileInfo $file */
                 foreach ($iterator as $file) {
-                    if (!$file->isFile()) continue;
-                    $fn = $file->getFilename();
-                    $pn = $file->getPathname();
-                    if (str_starts_with($fn, '._') || str_contains($pn, '__MACOSX')) continue;
-
-                    $ext = strtolower(pathinfo($fn, PATHINFO_EXTENSION));
-                    if (in_array($ext, ['rar', 'zip', '7z', 'tar', 'gz'], true)) {
-                        $nestedArchives[] = $file->getRealPath();
+                    if (!$file->isFile()) {
+                        continue;
                     }
-                }
 
-                if (empty($nestedArchives)) {
-                    break;
-                }
+                    $filename = $file->getFilename();
+                    $pathname = $file->getPathname();
 
-                foreach ($nestedArchives as $archivePath) {
-                    $subDir = dirname($archivePath) . '/unpacked_' . Str::random(8);
-                    $this->extractArchiveFile($archivePath, $subDir, pathinfo($archivePath, PATHINFO_EXTENSION));
-                    @unlink($archivePath);
-                }
-            }
+                    if (str_starts_with($filename, '._') || str_contains($pathname, '__MACOSX')) {
+                        continue;
+                    }
 
-            // Scan all document files recursively
-            $docFiles = [];
-            $allFoundFiles = [];
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS)
-            );
-            /** @var SplFileInfo $file */
-            foreach ($iterator as $file) {
-                if (!$file->isFile()) {
-                    continue;
-                }
+                    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    $allFoundFilesGlobal[] = $filename;
 
-                $filename = $file->getFilename();
-                $pathname = $file->getPathname();
-
-                // Skip macOS AppleDouble hidden files (._filename) and __MACOSX directories
-                if (str_starts_with($filename, '._') || str_contains($pathname, '__MACOSX')) {
-                    continue;
-                }
-
-                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                $allFoundFiles[] = $filename;
-
-                if ($ext === 'pdf') {
-                    $docFiles[] = [
-                        'path' => $file->getRealPath(),
-                        'filename' => $filename,
-                        'extension' => $ext,
-                    ];
-                }
-            }
-
-            if (empty($docFiles)) {
-                $fileHint = !empty($allFoundFiles)
-                    ? ' Berkas yang ditemukan di dalam arsip: ' . implode(', ', array_slice($allFoundFiles, 0, 5)) . '.'
-                    : ' Berkas arsip kosong atau tidak berisi file.';
-
-                $errMsg = 'Tidak ditemukan berkas PDF (.pdf) di dalam file ZIP/RAR.' . $fileHint;
-
-                if ($request->ajax()) {
-                    return response()->json([
-                        'message' => $errMsg,
-                    ], 422);
-                }
-
-                return back()
-                    ->withInput()
-                    ->with('import_error', $errMsg);
-            }
-
-            foreach ($docFiles as $index => $item) {
-                $rowNum = $index + 1;
-                $pdfPath = $item['path'];
-                $originalName = $item['filename'];
-                $ext = $item['extension'];
-
-                try {
-                    // Parse basic info from filename (remove extension)
-                    $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
-
-                    $mimeType = 'application/pdf';
-
-                    // Store the document file
-                    $storedPath = null;
-                    $uploadedFile = new \Illuminate\Http\UploadedFile(
-                        $pdfPath,
-                        $originalName,
-                        $mimeType,
-                        null,
-                        true
-                    );
-                    $storedPath = $this->storeUploadedFile($uploadedFile, 'repository-documents');
-
-                    // Count PDF pages if PDF
-                    $pdfPageCount = null;
                     if ($ext === 'pdf') {
-                        try {
-                            $pdfPageCount = $this->countPdfPages($pdfPath);
-                        } catch (\Throwable $e) {
-                            // ignore
-                        }
+                        $docFiles[] = [
+                            'path' => $file->getRealPath(),
+                            'filename' => $filename,
+                            'extension' => $ext,
+                        ];
                     }
+                }
 
-                    RepositoryDocument::create([
-                        'user_id'          => Auth::id(),
-                        'input_by'         => Auth::id(),
-                        'kategori'         => $kategori,
-                        'jenis_input'      => 'upload',
-                        'nama'             => $nameWithoutExt,
-                        'judul'            => $nameWithoutExt,
-                        'tahun'            => date('Y'),
-                        'bulan'            => now()->month,
-                        'file_dokumen'     => $storedPath,
-                        'pdf_page_count'   => $pdfPageCount,
-                        'status'           => 'terverifikasi',
-                        'verified_by'      => Auth::id(),
-                        'verified_at'      => now(),
-                        'tanggal_upload'   => now(),
-                        'submission_token' => Str::random(48),
-                    ]);
+                if (empty($docFiles)) {
+                    $archiveFailures[] = "Arsip '{$archiveOriginalName}' tidak berisi file PDF.";
+                    continue;
+                }
 
-                    $successCount++;
+                $processedArchivesCount++;
+
+                // Simpan setiap dokumen dalam transaksi untuk kecepatan dan integritas
+                DB::beginTransaction();
+                try {
+                    foreach ($docFiles as $item) {
+                        $pdfPath = $item['path'];
+                        $originalName = $item['filename'];
+                        $ext = $item['extension'];
+
+                        $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
+                        $mimeType = 'application/pdf';
+
+                        $uploadedFile = new UploadedFile(
+                            $pdfPath,
+                            $originalName,
+                            $mimeType,
+                            null,
+                            true
+                        );
+                        $storedPath = $this->storeUploadedFile($uploadedFile, 'repository-documents');
+
+                        $pdfPageCount = null;
+                        if ($ext === 'pdf') {
+                            try {
+                                $pdfPageCount = $this->countPdfPages($pdfPath);
+                            } catch (\Throwable $e) {
+                                // ignore
+                            }
+                        }
+
+                        RepositoryDocument::create([
+                            'user_id' => Auth::id(),
+                            'input_by' => Auth::id(),
+                            'kategori' => $kategori,
+                            'jenis_input' => 'upload',
+                            'nama' => $nameWithoutExt,
+                            'judul' => $nameWithoutExt,
+                            'tahun' => date('Y'),
+                            'bulan' => now()->month,
+                            'file_dokumen' => $storedPath,
+                            'pdf_page_count' => $pdfPageCount,
+                            'status' => 'terverifikasi',
+                            'verified_by' => Auth::id(),
+                            'verified_at' => now(),
+                            'tanggal_upload' => now(),
+                            'submission_token' => Str::random(48),
+                        ]);
+
+                        $totalSuccessCount++;
+                    }
+                    DB::commit();
                 } catch (\Throwable $e) {
-                    $errorRows[] = [
-                        'row'    => $rowNum,
-                        'nama'   => $originalName,
-                        'judul'  => $originalName,
+                    DB::rollBack();
+                    $allErrorRows[] = [
+                        'row' => $archiveIndex + 1,
+                        'nama' => $archiveOriginalName,
+                        'judul' => $archiveOriginalName,
                         'errors' => [$e->getMessage()],
                     ];
                 }
+            } catch (\Throwable $e) {
+                $archiveFailures[] = "Gagal memproses arsip {$archiveOriginalName}: " . $e->getMessage();
+            } finally {
+                if (is_dir($extractDir)) {
+                    $this->deleteDirectory($extractDir);
+                }
             }
+        }
+
+        // Evaluasi hasil batch
+        if ($totalSuccessCount === 0) {
+            $fileHint = !empty($allFoundFilesGlobal)
+                ? ' Berkas yang ditemukan di dalam arsip: ' . implode(', ', array_slice($allFoundFilesGlobal, 0, 5)) . '.'
+                : '';
+
+            $detailMsg = !empty($archiveFailures) ? ' (' . implode('; ', $archiveFailures) . ')' : '';
+            $errMsg = 'Tidak ditemukan berkas PDF (.pdf) di dalam file ZIP/RAR yang diupload.' . $detailMsg . $fileHint;
 
             if ($request->ajax()) {
-                if ($successCount === 0 && count($errorRows) > 0) {
-                    $firstErr = $errorRows[0]['errors'][0] ?? 'Gagal memproses file dokumen.';
-                    return response()->json([
-                        'message' => 'Gagal memproses file ZIP: ' . $firstErr,
-                        'errors' => $errorRows,
-                    ], 422);
-                }
-
-                $message = 'Upload ZIP berhasil! ' . $successCount . ' file dokumen berhasil diproses sebagai data ' . strtoupper($kategori) . '.';
-                if (count($errorRows) > 0) {
-                    $message .= ' (' . count($errorRows) . ' file gagal diproses).';
-                }
-
                 return response()->json([
-                    'message' => $message,
-                    'success_count' => $successCount,
-                    'error_count' => count($errorRows),
-                    'kategori' => $kategori,
-                ]);
-            }
-
-            return back()->with([
-                'import_success'  => $successCount,
-                'import_errors'   => $errorRows,
-                'import_kategori' => $kategori,
-                'status'          => 'Upload file ZIP berhasil diproses (' . $successCount . ' berkas).',
-            ]);
-        } catch (\Throwable $e) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'message' => 'Gagal memproses file ZIP: ' . $e->getMessage(),
-                ], 500);
+                    'message' => $errMsg,
+                    'errors' => $allErrorRows,
+                ], 422);
             }
 
             return back()
                 ->withInput()
-                ->with('import_error', 'Gagal memproses file ZIP: ' . $e->getMessage());
-        } finally {
-            // Clean up temp dir — ALWAYS executed on success, early return, or exception
-            try {
-                if (is_dir($extractDir)) {
-                    $this->deleteDirectory($extractDir);
-                }
-            } catch (\Throwable $e) {
-                // Silently ignore cleanup errors
-            }
+                ->with('import_error', $errMsg);
         }
+
+        $totalUploadedArchives = count($uploadedArchives);
+        $message = "Upload berhasil! {$totalSuccessCount} file dokumen dari {$totalUploadedArchives} file ZIP/RAR berhasil diproses sebagai data " . strtoupper($kategori) . ".";
+        if (!empty($archiveFailures)) {
+            $message .= ' Catatan: ' . implode(' ', $archiveFailures);
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'message' => $message,
+                'success_count' => $totalSuccessCount,
+                'error_count' => count($allErrorRows),
+                'archives_count' => $totalUploadedArchives,
+                'archive_failures' => $archiveFailures,
+                'kategori' => $kategori,
+            ]);
+        }
+
+        return back()->with([
+            'import_success' => $totalSuccessCount,
+            'import_errors' => $allErrorRows,
+            'import_kategori' => $kategori,
+            'status' => $message,
+        ]);
     }
 
     /**
@@ -1290,9 +1329,9 @@ class AdminDocumentController extends Controller
 
         $example = match ($kategori) {
             'skripsi' => ['12345678', 'Budi Santoso', 'budi@example.com', 'Judul Skripsi Contoh', date('Y'), 'Abstrak singkat tentang penelitian ini.', 'Teknik Informatika', 'Dr. Ahmad Fauzi', 'budi_skripsi.pdf'],
-            'magang'  => ['12345678', 'Siti Rahayu', 'siti@example.com', 'Laporan Magang di Perusahaan X', date('Y'), 'Abstrak singkat laporan magang.', 'Sistem Informasi', 'PT. Karya Abadi', 'Dr. Budi Santoso', 'siti_magang.pdf'],
-            'pkm'     => ['0123456789', 'Dr. Ahmad Fauzi', 'ahmad@kampus.ac.id', 'Judul PKM Contoh', date('Y'), 'Abstrak PKM singkat.', 'Teknik Informatika', 'Detail tambahan tentang PKM ini.', 'pkm_ahmad.pdf'],
-            default   => ['0123456789', 'Prof. Dr. Sari Dewi', 'sari@kampus.ac.id', 'Judul Penelitian Contoh', date('Y'), 'Abstrak penelitian dosen.', 'Matematika', 'Detail tambahan penelitian.', 'penelitian_sari.pdf'],
+            'magang' => ['12345678', 'Siti Rahayu', 'siti@example.com', 'Laporan Magang di Perusahaan X', date('Y'), 'Abstrak singkat laporan magang.', 'Sistem Informasi', 'PT. Karya Abadi', 'Dr. Budi Santoso', 'siti_magang.pdf'],
+            'pkm' => ['0123456789', 'Dr. Ahmad Fauzi', 'ahmad@kampus.ac.id', 'Judul PKM Contoh', date('Y'), 'Abstrak PKM singkat.', 'Teknik Informatika', 'Detail tambahan tentang PKM ini.', 'pkm_ahmad.pdf'],
+            default => ['0123456789', 'Prof. Dr. Sari Dewi', 'sari@kampus.ac.id', 'Judul Penelitian Contoh', date('Y'), 'Abstrak penelitian dosen.', 'Matematika', 'Detail tambahan penelitian.', 'penelitian_sari.pdf'],
         };
 
         $example = array_slice(array_pad($example, count($headers), ''), 0, count($headers));
