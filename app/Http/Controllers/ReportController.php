@@ -166,20 +166,64 @@ class ReportController extends Controller
     {
         abort_if(! in_array($format, ['excel', 'pdf'], true), 404);
 
-        $reports = $this->reportRows($request, $request->kategori);
+        $scope          = $request->query('scope', 'filtered');
+        $kategoriFilter = $request->kategori ?: $request->query('kategori');
+        $tahunFilter    = $request->query('tahun');
+        $statusFilter   = $request->query('status');
+        $searchQuery    = $request->query('search');
+
+        // Jika scope = all atau tahun = all, hapus batasan filter
+        if ($scope === 'all') {
+            $kategoriFilter = null;
+            $tahunFilter    = null;
+            $statusFilter   = null;
+            $searchQuery    = null;
+        } elseif ($tahunFilter === 'all' || $tahunFilter === '') {
+            $tahunFilter = null;
+        }
+
+        $documents = RepositoryDocument::with(['programStudi', 'owner', 'dosenPembimbing'])
+            ->when($kategoriFilter, fn ($q) => $q->where('kategori', $kategoriFilter))
+            ->when($tahunFilter, fn ($q) => $q->where('tahun', $tahunFilter))
+            ->when($statusFilter, fn ($q) => $q->where('status', $statusFilter))
+            ->when($searchQuery, function ($q, $s) {
+                $q->where(function ($sub) use ($s) {
+                    $sub->where('judul', 'like', "%{$s}%")
+                        ->orWhere('nama', 'like', "%{$s}%")
+                        ->orWhere('nim', 'like', "%{$s}%")
+                        ->orWhere('nidn', 'like', "%{$s}%");
+                });
+            })
+            ->latest()
+            ->get();
+
+        $filterLabels = [];
+        if ($scope === 'all') {
+            $filterLabels[] = 'Semua Data Dokumen (Seluruh Tahun)';
+        } else {
+            if ($tahunFilter) $filterLabels[] = 'Tahun: ' . $tahunFilter;
+            if ($kategoriFilter) $filterLabels[] = 'Kategori: ' . ucfirst($kategoriFilter);
+            if ($statusFilter) $filterLabels[] = 'Status: ' . ucfirst($statusFilter);
+            if ($searchQuery) $filterLabels[] = 'Pencarian: "' . $searchQuery . '"';
+            if (empty($filterLabels)) $filterLabels[] = 'Semua Data Dokumen';
+        }
+        $filterText = implode(' | ', $filterLabels);
+
+        $filenameSuffix = $tahunFilter ? "tahun-{$tahunFilter}" : ($scope === 'all' ? 'semua' : 'data');
+        $timestamp = date('Ymd_His');
 
         if ($format === 'excel') {
-            $html = view('reports.export-table', compact('reports'))->render();
+            $html = view('reports.export-table', compact('documents', 'filterText'))->render();
 
             return response($html, 200, [
                 'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="laporan-repository.xls"',
+                'Content-Disposition' => 'attachment; filename="laporan-repository-' . $filenameSuffix . '-' . $timestamp . '.xls"',
             ]);
         }
 
-        return response($this->simplePdf($reports), 200, [
+        return response($this->generatePdf($documents, $filterText), 200, [
             'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="laporan-repository.pdf"',
+            'Content-Disposition' => 'attachment; filename="laporan-repository-' . $filenameSuffix . '-' . $timestamp . '.pdf"',
         ]);
     }
 
@@ -196,46 +240,152 @@ class ReportController extends Controller
             ->get();
     }
 
-    private function simplePdf($reports): string
+    private function generatePdf($documents, string $filterText = ''): string
     {
-        $lines = ['Laporan Repository Kampus', ''];
-        $lines[] = 'Kategori | Tahun | Bulan | Status | Mode | Total';
-        foreach ($reports as $row) {
-            $lines[] = implode(' | ', [
-                strtoupper($row->kategori),
-                $row->tahun,
-                $row->bulan ?: '-',
-                $row->status,
-                $row->jenis_input,
-                $row->total,
-            ]);
+        $pdf = new class($filterText) extends \FPDF {
+            private string $filterText;
+
+            public function __construct(string $filterText)
+            {
+                parent::__construct('L', 'mm', 'A4');
+                $this->filterText = $filterText;
+                $this->AliasNbPages();
+                $this->SetMargins(14, 14, 14);
+                $this->SetAutoPageBreak(true, 18);
+            }
+
+            public function Header(): void
+            {
+                $logoPath = public_path('assets/metamedia.png');
+                if (file_exists($logoPath)) {
+                    $this->Image($logoPath, 14, 10, 16);
+                    $this->SetXY(33, 10);
+                } else {
+                    $this->SetXY(14, 10);
+                }
+
+                $this->SetFont('Arial', 'B', 13);
+                $this->SetTextColor(30, 58, 138);
+                $this->Cell(0, 5, 'UNIVERSITAS METAMEDIA', 0, 1, 'L');
+
+                if (file_exists($logoPath)) {
+                    $this->SetX(33);
+                } else {
+                    $this->SetX(14);
+                }
+                $this->SetFont('Arial', 'B', 10);
+                $this->SetTextColor(51, 65, 85);
+                $this->Cell(0, 4.5, 'LAPORAN DATA DOKUMEN REPOSITORY', 0, 1, 'L');
+
+                if (file_exists($logoPath)) {
+                    $this->SetX(33);
+                } else {
+                    $this->SetX(14);
+                }
+                $this->SetFont('Arial', '', 7.5);
+                $this->SetTextColor(100, 116, 139);
+                $subText = 'Dicetak: ' . date('d/m/Y H:i') . ' WIB';
+                if ($this->filterText !== '') {
+                    $subText .= ' | ' . $this->filterText;
+                }
+                $this->Cell(0, 4, $this->encode($subText), 0, 1, 'L');
+
+                $this->SetLineWidth(0.3);
+                $this->SetDrawColor(203, 213, 225);
+                $this->Line(14, 27, 283, 27);
+                $this->Ln(6);
+
+                // Table Headers
+                $this->SetFont('Arial', 'B', 8);
+                $this->SetFillColor(238, 242, 255);
+                $this->SetTextColor(30, 58, 138);
+                $this->SetDrawColor(199, 210, 254);
+
+                $this->Cell(10, 7, 'No', 1, 0, 'C', true);
+                $this->Cell(75, 7, 'Judul Dokumen', 1, 0, 'L', true);
+                $this->Cell(42, 7, 'Penulis', 1, 0, 'L', true);
+                $this->Cell(26, 7, 'NIM / NIDN', 1, 0, 'C', true);
+                $this->Cell(45, 7, 'Program Studi', 1, 0, 'L', true);
+                $this->Cell(26, 7, 'Kategori', 1, 0, 'C', true);
+                $this->Cell(17, 7, 'Tahun', 1, 0, 'C', true);
+                $this->Cell(28, 7, 'Status', 1, 1, 'C', true);
+
+                $this->SetTextColor(30, 41, 59);
+                $this->SetFont('Arial', '', 7.5);
+                $this->SetDrawColor(226, 232, 240);
+            }
+
+            public function Footer(): void
+            {
+                $this->SetY(-14);
+                $this->SetFont('Arial', 'I', 7.5);
+                $this->SetTextColor(148, 163, 184);
+                $this->Cell(0, 8, $this->encode('Halaman ' . $this->PageNo() . ' dari {nb} | E-Repository Universitas Metamedia'), 0, 0, 'C');
+            }
+
+            public function encode(string $text): string
+            {
+                return mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8');
+            }
+
+            public function fitText(string $text, float $maxWidth): string
+            {
+                $text = trim($text);
+                $encoded = $this->encode($text);
+                if ($this->GetStringWidth($encoded) <= $maxWidth) {
+                    return $encoded;
+                }
+
+                while (mb_strlen($text) > 3 && $this->GetStringWidth($this->encode($text . '...')) > $maxWidth) {
+                    $text = mb_substr($text, 0, -1);
+                }
+
+                return $this->encode($text . '...');
+            }
+        };
+
+        $pdf->AddPage();
+
+        $fill = false;
+        $no = 1;
+
+        foreach ($documents as $doc) {
+            $pdf->SetFillColor($fill ? 248 : 255, $fill ? 250 : 255, $fill ? 252 : 255);
+
+            $judul  = $pdf->fitText($doc->judul ?? '-', 73);
+            $penulis = $pdf->fitText($doc->nama ?? '-', 40);
+            $nim     = $pdf->fitText($doc->nim ?: ($doc->nidn ?: '-'), 24);
+            $prodi   = $pdf->fitText($doc->programStudi?->nama ?? '-', 43);
+            $kategori = $pdf->fitText(strtoupper($doc->kategori ?? '-'), 24);
+            $tahun   = (string) ($doc->tahun ?? '-');
+            $status  = strtoupper($doc->status ?? '-');
+
+            $pdf->Cell(10, 6.5, (string) $no++, 1, 0, 'C', true);
+            $pdf->Cell(75, 6.5, $judul, 1, 0, 'L', true);
+            $pdf->Cell(42, 6.5, $penulis, 1, 0, 'L', true);
+            $pdf->Cell(26, 6.5, $nim, 1, 0, 'C', true);
+            $pdf->Cell(45, 6.5, $prodi, 1, 0, 'L', true);
+            $pdf->Cell(26, 6.5, $kategori, 1, 0, 'C', true);
+            $pdf->Cell(17, 6.5, $tahun, 1, 0, 'C', true);
+
+            // Status color highlight
+            if ($doc->status === 'terverifikasi') {
+                $pdf->SetTextColor(5, 150, 105);
+            } elseif ($doc->status === 'ditolak') {
+                $pdf->SetTextColor(225, 29, 72);
+            } else {
+                $pdf->SetTextColor(217, 119, 6);
+            }
+            $pdf->Cell(28, 6.5, $pdf->encode($status), 1, 1, 'C', true);
+            $pdf->SetTextColor(30, 41, 59);
+
+            $fill = ! $fill;
         }
 
-        $content = collect($lines)
-            ->map(fn ($line) => '('.str_replace(['\\', '(', ')'], ['\\\\', '\(', '\)'], $line).') Tj T*')
-            ->implode("\n");
-        $stream = "BT /F1 10 Tf 40 800 Td 14 TL\n$content\nET";
-        $objects = [
-            "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
-            "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n",
-            "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n",
-            "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n",
-            "5 0 obj << /Length ".strlen($stream)." >> stream\n$stream\nendstream endobj\n",
-        ];
-
-        $pdf = "%PDF-1.4\n";
-        $offsets = [0];
-        foreach ($objects as $object) {
-            $offsets[] = strlen($pdf);
-            $pdf .= $object;
+        if ($documents->isEmpty()) {
+            $pdf->Cell(269, 12, $pdf->encode('Tidak ada data dokumen repository ditemukan.'), 1, 1, 'C', true);
         }
 
-        $xref = strlen($pdf);
-        $pdf .= "xref\n0 ".(count($objects) + 1)."\n0000000000 65535 f \n";
-        foreach (array_slice($offsets, 1) as $offset) {
-            $pdf .= sprintf("%010d 00000 n \n", $offset);
-        }
-
-        return $pdf."trailer << /Size ".(count($objects) + 1)." /Root 1 0 R >>\nstartxref\n$xref\n%%EOF";
+        return $pdf->Output('S');
     }
 }

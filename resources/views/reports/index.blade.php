@@ -48,20 +48,25 @@
                 </div>
 
                 {{-- Hero Quick Actions --}}
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
                     <button type="button" onclick="openCreateModal()" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-blue-700 shadow-md shadow-blue-900/20 transition hover:bg-blue-50 sm:text-sm">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Tambah Dokumen
                     </button>
 
-                    <a href="{{ route('reports.export', ['format' => 'excel'] + request()->query()) }}" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-900/20 transition hover:bg-blue-700 sm:text-sm">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                        Export Excel
+                    <button type="button" onclick="openModal('modal-export')" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-950/20 transition hover:bg-emerald-700 sm:text-sm">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Pusat Ekspor Laporan
+                    </button>
+
+                    <a href="{{ route('reports.export', ['format' => 'excel', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600/90 px-3.5 py-2.5 text-xs font-bold text-white border border-white/20 backdrop-blur-sm transition hover:bg-blue-600 sm:text-sm" title="Ekspor Semua Data (Seluruh Tahun) ke Excel">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Excel (Semua)
                     </a>
 
-                    <a href="{{ route('reports.export', ['format' => 'pdf'] + request()->query()) }}" class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-sky-900/20 transition hover:bg-sky-700 sm:text-sm">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                        Export PDF
+                    <a href="{{ route('reports.export', ['format' => 'pdf', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-sky-600/90 px-3.5 py-2.5 text-xs font-bold text-white border border-white/20 backdrop-blur-sm transition hover:bg-sky-600 sm:text-sm" title="Ekspor Semua Data (Seluruh Tahun) ke PDF">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                        PDF (Semua)
                     </a>
                 </div>
             </div>
@@ -290,12 +295,15 @@
                         <table class="w-full text-left text-xs sm:text-sm">
                             <thead class="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
                                 <tr>
-                                    <th class="px-6 py-3.5">Judul & Penulis</th>
-                                    <th class="px-6 py-3.5">Kategori</th>
-                                    <th class="px-6 py-3.5">Tahun</th>
-                                    <th class="px-6 py-3.5">Status</th>
-                                    <th class="px-6 py-3.5">Program Studi</th>
-                                    <th class="px-6 py-3.5 text-right">Aksi (CRUD)</th>
+                                    <th class="px-4 py-3.5 text-center">No</th>
+                                    <th class="px-5 py-3.5">Judul</th>
+                                    <th class="px-4 py-3.5">Penulis</th>
+                                    <th class="px-4 py-3.5">NIM / NIDN</th>
+                                    <th class="px-4 py-3.5">Kategori</th>
+                                    <th class="px-4 py-3.5 text-center">Tahun</th>
+                                    <th class="px-4 py-3.5">Status</th>
+                                    <th class="px-4 py-3.5">Program Studi</th>
+                                    <th class="px-4 py-3.5 text-right">Aksi (CRUD)</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -307,28 +315,34 @@
                                         ][$doc->status] ?? 'bg-amber-100 text-amber-700 ring-amber-200';
                                     @endphp
                                     <tr class="transition hover:bg-blue-50/40">
-                                        <td class="px-6 py-4">
-                                            <p class="font-bold text-slate-900 line-clamp-1" title="{{ $doc->judul }}">{{ $doc->judul }}</p>
-                                            <p class="mt-0.5 text-xs text-slate-500">
-                                                {{ $doc->nama }} @if($doc->nim || $doc->nidn) • ({{ $doc->nim ?: $doc->nidn }}) @endif
-                                            </p>
+                                        <td class="px-4 py-4 text-center text-xs font-semibold text-slate-400">
+                                            {{ $documents->firstItem() ? $documents->firstItem() + $loop->index : $loop->iteration }}
                                         </td>
-                                        <td class="px-6 py-4">
+                                        <td class="px-5 py-4 max-w-xs">
+                                            <p class="font-bold text-slate-900 line-clamp-2" title="{{ $doc->judul }}">{{ $doc->judul }}</p>
+                                        </td>
+                                        <td class="px-4 py-4 font-semibold text-slate-800 whitespace-nowrap">
+                                            {{ $doc->nama }}
+                                        </td>
+                                        <td class="px-4 py-4 text-slate-600 font-mono text-xs whitespace-nowrap">
+                                            {{ $doc->nim ?: ($doc->nidn ?: '-') }}
+                                        </td>
+                                        <td class="px-4 py-4 whitespace-nowrap">
                                             <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-blue-700 ring-1 ring-blue-100">
                                                 {{ strtoupper($doc->kategori) }}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 font-semibold text-slate-800">{{ $doc->tahun }}</td>
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4 text-center font-semibold text-slate-800 whitespace-nowrap">{{ $doc->tahun }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap">
                                             <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 {{ $badgeClass }}">
                                                 <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
                                                 {{ strtoupper($doc->status) }}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-xs text-slate-600">
+                                        <td class="px-4 py-4 text-xs text-slate-600 whitespace-nowrap">
                                             {{ $doc->programStudi?->nama ?: '-' }}
                                         </td>
-                                        <td class="px-6 py-4 text-right">
+                                        <td class="px-4 py-4 text-right whitespace-nowrap">
                                             <div class="flex items-center justify-end gap-1.5">
                                                 {{-- Detail --}}
                                                 <button type="button" onclick="openDetailModal({{ json_encode($doc) }})" class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition" title="Lihat Detail">
@@ -351,7 +365,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium">
+                                        <td colspan="9" class="px-6 py-12 text-center text-slate-400 font-medium">
                                             Tidak ada data dokumen ditemukan.
                                         </td>
                                     </tr>
@@ -630,6 +644,111 @@
     </div>
 </div>
 
+{{-- ============ MODAL EKSPOR LAPORAN ============ --}}
+<div id="modal-export" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm hidden">
+    <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl transition-all">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Pusat Ekspor Laporan Dokumen</h3>
+                    <p class="text-xs text-slate-500">Unduh data spesifik (Judul, Penulis, NIM, Kategori, Tahun, Status, Prodi).</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('modal-export')" class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <div class="mt-5 space-y-4">
+            {{-- Opsi 1: Ekspor Semua Data --}}
+            <div class="rounded-2xl border border-blue-100 bg-blue-50/40 p-4.5 transition hover:border-blue-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900">
+                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">1</span>
+                            Ekspor Semua Data (Seluruh Tahun)
+                        </span>
+                        <p class="mt-1 text-xs text-slate-600">Unduh seluruh berkas repository tanpa batasan tahun atau kategori.</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a href="{{ route('reports.export', ['format' => 'excel', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            Excel (Semua)
+                        </a>
+                        <a href="{{ route('reports.export', ['format' => 'pdf', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                            PDF (Semua)
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Opsi 2: Ekspor Per Tahun --}}
+            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4.5 transition hover:border-indigo-200">
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-900">
+                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-white">2</span>
+                            Ekspor Spesifik Per Tahun
+                        </span>
+                        <p class="mt-1 text-xs text-slate-600">Pilih tahun yang diinginkan untuk mengunduh laporan berkas pada tahun tersebut.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5 pt-1">
+                        <select id="export-select-tahun" onchange="updateYearExportLinks()" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm">
+                            @foreach ($tahunList as $th)
+                                <option value="{{ $th }}" {{ request('tahun') == $th ? 'selected' : '' }}>Tahun {{ $th }}</option>
+                            @endforeach
+                        </select>
+                        <a id="btn-export-year-excel" href="{{ route('reports.export', ['format' => 'excel', 'tahun' => request('tahun') ?: ($tahunList[0] ?? date('Y'))]) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            Excel Per Tahun
+                        </a>
+                        <a id="btn-export-year-pdf" href="{{ route('reports.export', ['format' => 'pdf', 'tahun' => request('tahun') ?: ($tahunList[0] ?? date('Y'))]) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                            PDF Per Tahun
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Opsi 3: Ekspor Sesuai Filter Halaman Ini --}}
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4.5 transition hover:border-slate-300">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-[10px] text-white">3</span>
+                            Ekspor Sesuai Filter Aktif
+                        </span>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Unduh data sesuai kombinasi pencarian, kategori, tahun, & status pada tabel saat ini.
+                            @if(request()->anyFilled(['search', 'kategori', 'tahun', 'status']))
+                                <span class="font-semibold text-blue-600 block sm:inline">(Ada filter aktif)</span>
+                            @endif
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a href="{{ route('reports.export', ['format' => 'excel'] + request()->query()) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            Excel Filter
+                        </a>
+                        <a href="{{ route('reports.export', ['format' => 'pdf'] + request()->query()) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                            PDF Filter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end border-t border-slate-100 pt-4">
+            <button type="button" onclick="closeModal('modal-export')" class="rounded-xl bg-slate-100 px-5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 transition">Tutup</button>
+        </div>
+    </div>
+</div>
+
 <script>
     function switchTab(tab) {
         const crudBtn = document.getElementById('tab-crud-btn');
@@ -660,6 +779,21 @@
 
     function openCreateModal() {
         openModal('modal-create');
+    }
+
+    function updateYearExportLinks() {
+        const select = document.getElementById('export-select-tahun');
+        if (!select) return;
+        const year = select.value;
+        const btnExcel = document.getElementById('btn-export-year-excel');
+        const btnPdf = document.getElementById('btn-export-year-pdf');
+
+        if (btnExcel) {
+            btnExcel.href = `{{ url('/laporan/export/excel') }}?tahun=${year}`;
+        }
+        if (btnPdf) {
+            btnPdf.href = `{{ url('/laporan/export/pdf') }}?tahun=${year}`;
+        }
     }
 
     function openEditModal(doc) {
@@ -695,7 +829,9 @@
             closeModal('modal-create');
             closeModal('modal-edit');
             closeModal('modal-detail');
+            closeModal('modal-export');
         }
     });
 </script>
 @endsection
+
