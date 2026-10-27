@@ -1392,8 +1392,8 @@
                         <span>Dashboard</span>
                     </a>
                     @if (request()->is('admin/*') || request()->routeIs('admin.*') || request()->routeIs('reports.*'))
-                        <a href="{{ route('admin.users.pending') }}"
-                            class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Verifikasi Akun</a>
+                        <a href="{{ route('admin.users.index') }}"
+                            class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Pemantauan Akun</a>
                         <a href="{{ route('admin.documents.pending') }}"
                             class="nav-link {{ request()->routeIs('admin.documents.*') ? 'active' : '' }}">Verifikasi Upload</a>
                         <a href="{{ route('reports.index') }}"
@@ -1532,7 +1532,7 @@
                                         </svg></span>
                                     <span>Dashboard Admin</span>
                                 </a>
-                                <a href="{{ route('admin.users.pending') }}" class="dropdown-item" role="menuitem">
+                                <a href="{{ route('admin.users.index') }}" class="dropdown-item" role="menuitem">
                                     <span class="dropdown-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
                                             stroke="currentColor" stroke-width="2">
                                             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -1540,7 +1540,7 @@
                                             <line x1="20" y1="8" x2="20" y2="14" />
                                             <line x1="23" y1="11" x2="17" y2="11" />
                                         </svg></span>
-                                    <span>Verifikasi Akun</span>
+                                    <span>Pemantauan Akun</span>
                                 </a>
                                 <a href="{{ route('admin.documents.pending') }}" class="dropdown-item" role="menuitem">
                                     <span class="dropdown-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
@@ -1609,14 +1609,25 @@
                     </div>
                 </div>
             @else
-                <a href="{{ route('login') }}" class="nav-login-btn">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                        <polyline points="10 17 15 12 10 7" />
-                        <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
-                    <span>Masuk</span>
-                </a>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <a href="{{ route('register') }}" class="nav-login-btn" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: #38BDF8;">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <line x1="19" y1="8" x2="19" y2="14" />
+                            <line x1="22" y1="11" x2="16" y2="11" />
+                        </svg>
+                        <span>Daftar</span>
+                    </a>
+                    <a href="{{ route('login') }}" class="nav-login-btn">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                            <polyline points="10 17 15 12 10 7" />
+                            <line x1="15" y1="12" x2="3" y2="12" />
+                        </svg>
+                        <span>Masuk</span>
+                    </a>
+                </div>
             @endauth
 
             {{-- Hamburger --}}
@@ -1716,7 +1727,7 @@
                         </svg>
                         Dashboard Admin
                     </a>
-                    <a href="{{ route('admin.users.pending') }}"
+                    <a href="{{ route('admin.users.index') }}"
                         class="drawer-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -1724,7 +1735,7 @@
                             <line x1="20" y1="8" x2="20" y2="14" />
                             <line x1="23" y1="11" x2="17" y2="11" />
                         </svg>
-                        Verifikasi Akun
+                        Pemantauan Akun
                     </a>
                     <a href="{{ route('admin.documents.pending') }}"
                         class="drawer-link {{ request()->routeIs('admin.documents.*') ? 'active' : '' }}">
@@ -1785,14 +1796,23 @@
                     Profil & Pengaturan
                 </a>
             @else
-                <p class="drawer-section-label">Masuk</p>
+                <p class="drawer-section-label">Akses Akun</p>
                 <a href="{{ route('login') }}" class="drawer-link">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                         <polyline points="10 17 15 12 10 7" />
                         <line x1="15" y1="12" x2="3" y2="12" />
                     </svg>
-                    Login Akun
+                    Masuk ke Akun
+                </a>
+                <a href="{{ route('register') }}" class="drawer-link">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <line x1="19" y1="8" x2="19" y2="14" />
+                        <line x1="22" y1="11" x2="16" y2="11" />
+                    </svg>
+                    Daftar Akun Baru
                 </a>
             @endauth
         </nav>

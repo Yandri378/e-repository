@@ -22,30 +22,88 @@ class AdminUserController extends Controller
 
     public function index(Request $request)
     {
-        $statusFilter = $request->query('status', 'aktif');
-        $allowedFilters = ['aktif', 'nonaktif', 'semua'];
+        $statusFilter = $request->query('status', 'semua');
+        $roleFilter = $request->query('role', 'semua');
+        $search = trim((string) $request->query('q', ''));
+        $sort = $request->query('sort', 'terbaru');
 
-        if (! in_array($statusFilter, $allowedFilters, true)) {
-            $statusFilter = 'aktif';
+        $inactiveThreshold = now()->subDays(30);
+
+        $query = User::with('programStudi')
+            ->whereIn('role', ['mahasiswa', 'dosen']);
+
+        // Filter Role
+        if (in_array($roleFilter, ['mahasiswa', 'dosen'], true)) {
+            $query->where('role', $roleFilter);
         }
 
-        $users = User::with('programStudi')
-            ->whereIn('role', ['mahasiswa', 'dosen'])
-            ->when($statusFilter !== 'semua', fn ($query) => $query->where('status_akun', $statusFilter))
-            ->when($statusFilter === 'semua', fn ($query) => $query->whereIn('status_akun', ['aktif', 'nonaktif']))
-            ->orderBy('name')
-            ->paginate(12)
-            ->withQueryString();
+        // Filter Status
+        if ($statusFilter === 'aktif') {
+            $query->where('status_akun', 'aktif');
+        } elseif ($statusFilter === 'nonaktif') {
+            $query->where('status_akun', 'nonaktif');
+        } elseif ($statusFilter === 'jarang_aktif') {
+            // Akun yang berstatus aktif tapi tidak pernah login dalam 30 hari terakhir atau belum pernah login
+            $query->where('status_akun', 'aktif')
+                ->where(function ($q) use ($inactiveThreshold) {
+                    $q->whereNull('last_login_at')
+                      ->orWhere('last_login_at', '<', $inactiveThreshold);
+                });
+        }
 
-        $userStatusCounts = User::whereIn('role', ['mahasiswa', 'dosen'])
-            ->whereIn('status_akun', ['aktif', 'nonaktif'])
-            ->selectRaw('status_akun, count(*) as total')
-            ->groupBy('status_akun')
-            ->pluck('total', 'status_akun');
+        // Pencarian (Nama, Email, NIM, NIDN)
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('nim', 'like', "%{$search}%")
+                  ->orWhere('nidn', 'like', "%{$search}%");
+            });
+        }
+
+        // Pengurutan
+        if ($sort === 'terlama_login') {
+            $query->orderByRaw('last_login_at IS NULL DESC, last_login_at ASC');
+        } elseif ($sort === 'terbaru_login') {
+            $query->orderByRaw('last_login_at IS NULL, last_login_at DESC');
+        } elseif ($sort === 'nama') {
+            $query->orderBy('name', 'asc');
+        } else {
+            $query->latest();
+        }
+
+        $users = $query->paginate(15)->withQueryString();
+
+        // Hitung statistik untuk pemantauan
+        $baseCountQuery = User::whereIn('role', ['mahasiswa', 'dosen']);
+        $totalUsers = (clone $baseCountQuery)->count();
+        $activeCount = (clone $baseCountQuery)->where('status_akun', 'aktif')->count();
+        $inactiveCount = (clone $baseCountQuery)->where('status_akun', 'nonaktif')->count();
+        $rarelyActiveCount = (clone $baseCountQuery)
+            ->where('status_akun', 'aktif')
+            ->where(function ($q) use ($inactiveThreshold) {
+                $q->whereNull('last_login_at')
+                  ->orWhere('last_login_at', '<', $inactiveThreshold);
+            })->count();
+
+        $stats = [
+            'total' => $totalUsers,
+            'aktif' => $activeCount,
+            'nonaktif' => $inactiveCount,
+            'jarang_aktif' => $rarelyActiveCount,
+        ];
 
         $programStudi = ProgramStudi::where('aktif', true)->orderBy('nama')->get();
 
-        return view('admin.users.index', compact('users', 'programStudi', 'statusFilter', 'userStatusCounts'));
+        return view('admin.users.index', compact(
+            'users',
+            'programStudi',
+            'statusFilter',
+            'roleFilter',
+            'search',
+            'sort',
+            'stats'
+        ));
     }
 
     public function store(Request $request)

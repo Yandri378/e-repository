@@ -37,6 +37,11 @@
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6M9 9h1"/></svg>
                     Buka Laporan
                 </a>
+                <a href="#laporan-kunjungan" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500/20 px-4 py-2.5 text-sm font-semibold text-emerald-200 ring-1 ring-inset ring-emerald-400/40 transition hover:bg-emerald-500/30">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Pengunjung: {{ number_format($todayVisitors) }} Hari Ini
+                </a>
             </div>
         </div>
     </section>
@@ -61,14 +66,29 @@
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>
                     Cek Upload
                 </a>
-                <a href="{{ route('admin.users.pending') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-blue-400 dark:hover:bg-slate-700 dark:hover:text-blue-200">
+                <a href="{{ route('admin.users.index') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-blue-400 dark:hover:bg-slate-700 dark:hover:text-blue-200">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    Cek Akun
+                    Pantau Akun
                 </a>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            <div class="flex items-center gap-4 rounded-3xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-white/40">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs font-medium text-emerald-800 dark:text-emerald-300">Pengunjung Hari Ini</p>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-200/60 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Live
+                        </span>
+                    </div>
+                    <p class="text-xl font-bold text-slate-900 dark:text-white">{{ number_format($todayVisitors) }} <span class="text-xs font-normal text-slate-500">orang</span></p>
+                </div>
+            </div>
             <div class="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-500/30 ring-1 ring-white/40">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
@@ -483,6 +503,211 @@
                     Belum ada data program studi.
                 </div>
             @endforelse
+        </div>
+    </section>
+
+    {{-- ============ LAPORAN KUNJUNGAN PER HARI (ADMIN ONLY) ============ --}}
+    <section id="laporan-kunjungan" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
+        {{-- Header Section --}}
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-6 dark:border-slate-800">
+            <div>
+                <p class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-md shadow-emerald-500/30">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </span>
+                    Laporan Khusus Admin &bull; Monitoring Pengunjung
+                </p>
+                <h2 class="mt-2 text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">
+                    Laporan Kunjungan Website (Per Hari)
+                </h2>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+                    Rekapitulasi jumlah pengunjung website per hari yang disimpan permanen di database. Setiap pergantian hari (00:00 WIB), hitungan pengunjung hari baru direset kembali dari 0.
+                </p>
+            </div>
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 ring-1 ring-emerald-500/20">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Live Sync Harian
+                </span>
+            </div>
+        </div>
+
+        {{-- 4 Metric Summary Cards --}}
+        <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-teal-50/30 p-5 dark:border-emerald-900/40 dark:bg-gradient-to-br dark:from-emerald-950/20 dark:to-slate-900">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Hari Ini (Reset 00:00)</span>
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-emerald-700 dark:text-emerald-300">{{ number_format($todayVisitors) }}</span>
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Pengunjung</span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    {{ number_format($todayHits) }} total akses halaman hari ini
+                </p>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-800/50">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Kemarin</span>
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-slate-900 dark:text-white">{{ number_format($yesterdayVisitors) }}</span>
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Pengunjung</span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Tersimpan permanen dalam histori
+                </p>
+            </div>
+
+            <div class="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/80 to-sky-50/30 p-5 dark:border-blue-900/40 dark:bg-gradient-to-br dark:from-blue-950/20 dark:to-slate-900">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Total Sepanjang Masa</span>
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-blue-700 dark:text-blue-300">{{ number_format($totalVisitors) }}</span>
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Pengunjung</span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Akumulasi seluruh sesi kunjungan
+                </p>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-800/50">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Hari Tercatat</span>
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/10 dark:text-indigo-400">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-slate-900 dark:text-white">{{ $dailyVisitorReport->count() }}</span>
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Hari Laporan</span>
+                </div>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Menampilkan hingga 30 hari terakhir
+                </p>
+            </div>
+        </div>
+
+        {{-- Visual Tren Mini Bar Harian (Jika ada data) --}}
+        @php
+            $maxDaily = $dailyVisitorReport->max('total_visitors') ?: 1;
+            $chartData = $dailyVisitorReport->take(14)->reverse();
+        @endphp
+        @if ($chartData->isNotEmpty())
+            <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Tren Pengunjung 14 Hari Terakhir</span>
+                    <span class="text-xs text-slate-400">Tertinggi: {{ $maxDaily }} Pengunjung / Hari</span>
+                </div>
+                <div class="flex items-end gap-2 sm:gap-3 h-28 pt-4">
+                    @foreach ($chartData as $item)
+                        @php
+                            $heightPercent = max(12, round(($item->total_visitors / $maxDaily) * 100));
+                            $isToday = \Carbon\Carbon::parse($item->visit_date)->isToday();
+                        @endphp
+                        <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group relative" title="{{ \Carbon\Carbon::parse($item->visit_date)->isoFormat('D MMM Y') }}: {{ $item->total_visitors }} Pengunjung, {{ $item->total_hits }} Hits">
+                            <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition">{{ $item->total_visitors }}</span>
+                            <div class="w-full rounded-t-lg transition-all duration-300 {{ $isToday ? 'bg-gradient-to-t from-emerald-600 to-teal-400 shadow-md shadow-emerald-500/30' : 'bg-gradient-to-t from-blue-600/70 to-sky-400/70 hover:from-blue-600 hover:to-sky-400' }}" style="height: {{ $heightPercent }}%;"></div>
+                            <span class="text-[9px] sm:text-[10px] font-semibold text-slate-400 whitespace-nowrap {{ $isToday ? 'text-emerald-500 font-bold' : '' }}">
+                                {{ $isToday ? 'Hari Ini' : \Carbon\Carbon::parse($item->visit_date)->format('d/m') }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- Table Laporan Per Hari --}}
+        <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800/80 dark:text-slate-400">
+                        <tr>
+                            <th scope="col" class="px-5 py-3.5">Tanggal</th>
+                            <th scope="col" class="px-5 py-3.5">Status Hari</th>
+                            <th scope="col" class="px-5 py-3.5 text-center">Pengunjung Unik</th>
+                            <th scope="col" class="px-5 py-3.5 text-center">Total Hits / Akses</th>
+                            <th scope="col" class="px-5 py-3.5 text-center">Rata-rata Akses / Orang</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                        @forelse ($dailyVisitorReport as $report)
+                            @php
+                                $date = \Carbon\Carbon::parse($report->visit_date);
+                                $isToday = $date->isToday();
+                                $isYesterday = $date->isYesterday();
+                                $avg = $report->total_visitors > 0 ? round($report->total_hits / $report->total_visitors, 1) : 0;
+                            @endphp
+                            <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40 {{ $isToday ? 'bg-emerald-50/30 dark:bg-emerald-950/10' : '' }}">
+                                <td class="px-5 py-4 font-semibold text-slate-900 dark:text-white">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="h-4 w-4 {{ $isToday ? 'text-emerald-500' : 'text-slate-400' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                                            <path d="M16 2v4M8 2v4M3 10h18"></path>
+                                        </svg>
+                                        <span>{{ $date->isoFormat('dddd, D MMMM Y') }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4">
+                                    @if ($isToday)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Hari Ini (Aktif)
+                                        </span>
+                                    @elseif ($isYesterday)
+                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                            Kemarin
+                                        </span>
+                                    @else
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">
+                                            {{ $date->diffForHumans() }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="inline-flex items-center gap-1 font-bold text-slate-900 dark:text-white">
+                                        <span class="text-base {{ $isToday ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : '' }}">{{ number_format($report->total_visitors) }}</span>
+                                        <span class="text-xs font-normal text-slate-500">orang</span>
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="font-medium text-slate-700 dark:text-slate-300">
+                                        {{ number_format($report->total_hits) }} <span class="text-xs text-slate-500">kali</span>
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-center text-slate-600 dark:text-slate-400">
+                                    <span class="font-semibold">{{ $avg }}x</span> <span class="text-xs">/ orang</span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="p-8 text-center text-slate-400">
+                                    <svg class="mx-auto mb-2 h-8 w-8 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    Belum ada data kunjungan yang tercatat. Kunjungan akan otomatis terekam saat halaman diakses.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="border-t border-slate-100 bg-slate-50/70 px-5 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 flex items-center justify-between">
+                <span>Data diurutkan dari hari terbaru. Hanya admin yang memiliki akses ke laporan ini.</span>
+                <span class="font-semibold text-emerald-600 dark:text-emerald-400">Pukul 00:00 WIB reset otomatis ke 0</span>
+            </div>
         </div>
     </section>
 

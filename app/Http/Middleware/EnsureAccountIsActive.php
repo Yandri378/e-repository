@@ -18,10 +18,16 @@ class EnsureAccountIsActive
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
+            $msg = match ($user->status_akun) {
+                'nonaktif' => 'Akun Anda berstatus nonaktif. Silakan hubungi Administrator untuk mengaktifkannya kembali.',
+                'ditolak' => 'Akun Anda ditolak oleh Admin: ' . ($user->alasan_penolakan ?? 'Silakan hubungi Admin.'),
+                default => 'Akun Anda tidak aktif. Silakan hubungi Administrator.',
+            };
+
             return redirect()
                 ->route('login')
                 ->withErrors([
-                    'login' => 'Akun Anda masih menunggu verifikasi Admin. Silakan tunggu atau hubungi Admin.',
+                    'login' => $msg,
                 ]);
         }
 

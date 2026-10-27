@@ -145,12 +145,20 @@
         margin: 0 auto;
     }
 
-    /* Live Badge */
+    /* Live & Visitor Badges */
+    .hero-badges-wrap {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        margin-bottom: 1.6rem;
+    }
     .hero-live-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.6rem;
-        padding: 0.4rem 1.1rem;
+        padding: 0.42rem 1.1rem;
         border-radius: 999px;
         background: rgba(15, 23, 42, 0.75);
         border: 1px solid rgba(255, 255, 255, 0.25);
@@ -161,7 +169,6 @@
         font-weight: 700;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-        margin-bottom: 1.6rem;
         animation: heroBadgePulse 4s ease-in-out infinite;
     }
     .hero-live-dot {
@@ -177,6 +184,105 @@
         border-radius: 50%;
         border: 1.5px solid #38bdf8;
         animation: pulseGlow 1.8s ease-out infinite;
+    }
+
+    .hero-visitor-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.42rem 1.15rem;
+        border-radius: 999px;
+        background: rgba(6, 78, 59, 0.55);
+        border: 1px solid rgba(52, 211, 153, 0.45);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 30px rgba(6, 78, 59, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        color: #d1fae5;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        animation: heroBadgePulse 4s ease-in-out infinite 0.5s;
+    }
+    .hero-visitor-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        position: relative;
+    }
+    .hero-visitor-dot::after {
+        content: '';
+        position: absolute;
+        inset: -3px;
+        border-radius: 50%;
+        border: 1.5px solid #34d399;
+        animation: pulseGlow 1.8s ease-out infinite;
+    }
+    .hero-visitor-val {
+        color: #ffffff;
+        background: linear-gradient(135deg, #a7f3d0, #34d399);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+    }
+
+    /* Daily Visitor Banner Strip */
+    .visitor-strip-wrap {
+        width: min(1200px, calc(100% - 2.5rem));
+        margin: -3.5rem auto 1.25rem;
+        position: relative;
+        z-index: 12;
+    }
+    .visitor-strip-card {
+        border-radius: 20px;
+        background: linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(6, 78, 59, 0.4));
+        border: 1px solid rgba(52, 211, 153, 0.35);
+        backdrop-filter: blur(20px);
+        padding: 1rem 1.6rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+    .visitor-strip-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .visitor-strip-icon {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #059669, #10b981);
+        display: flex; align-items: center; justify-content: center;
+        color: #ffffff;
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+        flex-shrink: 0;
+    }
+    .visitor-strip-title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .visitor-strip-desc {
+        font-size: 0.78rem;
+        color: rgba(209, 250, 229, 0.75);
+        margin: 0.15rem 0 0;
+    }
+    .visitor-strip-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.4rem 1rem;
+        border-radius: 12px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        color: #34d399;
+        font-size: 0.8rem;
+        font-weight: 700;
     }
 
     /* Hero Heading */
@@ -314,7 +420,7 @@
     /* ── Statistics Cards with 3D Tilt ──────────────────────────── */
     .stats-container {
         width: min(1200px, calc(100% - 2.5rem));
-        margin: -3.5rem auto 3rem;
+        margin: 0 auto 3.5rem;
         position: relative;
         z-index: 10;
         display: grid;
@@ -952,8 +1058,11 @@
 
     /* ── Responsive Refinements ─────────────────────────────────── */
     @media (max-width: 640px) {
+        .visitor-strip-wrap {
+            margin: -2rem auto 1rem;
+        }
         .stats-container {
-            margin-top: -1.5rem;
+            margin: 0 auto 2.5rem;
             grid-template-columns: 1fr;
         }
         .hero-search-input-wrap {
@@ -989,10 +1098,22 @@
     <div class="hero-grid-pattern" aria-hidden="true"></div>
 
     <div class="hero-content-wrap">
-        {{-- Live Status Pill --}}
-        <div class="hero-live-badge">
-            <span class="hero-live-dot"></span>
-            <span>E-Repository Universitas Metamedia &bull; {{ date('Y') }}</span>
+        {{-- Live Status Pill & Visitor Tracker Badge --}}
+        <div class="hero-badges-wrap">
+            <div class="hero-live-badge">
+                <span class="hero-live-dot"></span>
+                <span>E-Repository Universitas Metamedia &bull; {{ date('Y') }}</span>
+            </div>
+
+            <div class="hero-visitor-badge" title="Jumlah orang yang mengunjungi website hari ini. Dihitung mulai dari 0 setiap hari baru.">
+                <span class="hero-visitor-dot"></span>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-400">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>Pengunjung Hari Ini:</span>
+                <strong class="hero-visitor-val">{{ number_format($todayVisitors ?? 0) }} Orang</strong>
+            </div>
         </div>
 
         {{-- Main Heading --}}
@@ -1063,6 +1184,53 @@
         </div>
     </div>
 </section>
+
+{{-- ══════════════════════════════════════════════════════════════
+     DAILY VISITOR TRACKER STRIP (PENGUNJUNG HARI INI)
+══════════════════════════════════════════════════════════════ --}}
+<div class="visitor-strip-wrap">
+    <div class="visitor-strip-card">
+        <div class="visitor-strip-left">
+            <div class="visitor-strip-icon">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </div>
+            <div>
+                <h3 class="visitor-strip-title">
+                    <span>Pengunjung Website Hari Ini</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Live Tracker
+                    </span>
+                </h3>
+                <p class="visitor-strip-desc">
+                    {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }} &bull; Hitungan otomatis diulang dari nol (0) setiap hari baru pukul 00:00 WIB.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="text-right sm:text-left">
+                <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block">Total Pengunjung Hari Ini</span>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ number_format($todayVisitors ?? 0) }}</span>
+                    <span class="text-xs font-bold text-emerald-400 uppercase">Orang</span>
+                </div>
+            </div>
+            <div class="visitor-strip-badge hidden sm:inline-flex" title="Sistem mereset counter harian pada setiap pergantian tanggal secara otomatis">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>Reset 00:00 WIB</span>
+            </div>
+        </div>
+    </div>
+</div>
 
 {{-- ══════════════════════════════════════════════════════════════
      LIVE STATISTICS CARDS (3D TILT & ANIMATED COUNT)

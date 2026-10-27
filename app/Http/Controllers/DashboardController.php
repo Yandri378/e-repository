@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DailyVisitor;
 use App\Models\ProgramStudi;
 use App\Models\RepositoryDocument;
 use App\Models\RepositorySetting;
@@ -67,6 +68,11 @@ class DashboardController extends Controller
                 ->limit(6)
                 ->get(),
             'uploadStatuses' => RepositorySetting::uploadStatuses(),
+            'todayVisitors' => DailyVisitor::todayCount(),
+            'todayHits' => DailyVisitor::todayHits(),
+            'yesterdayVisitors' => DailyVisitor::yesterdayCount(),
+            'totalVisitors' => DailyVisitor::totalCount(),
+            'dailyVisitorReport' => DailyVisitor::dailyReport(30),
             'cards' => $this->cards(),
         ]);
     }

@@ -10,16 +10,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         :root{
-            --ink:#0F172A;
-            --ink-soft:#1E3A8A;
-            --parchment:#FFFFFF;
-            --parchment-deep:#F0F9FF;
-            --brass:#2563EB;
-            --brass-light:#38BDF8;
-            --sage:#0284C7;
-            --flag:#1D4ED8;
-            --line: rgba(37,99,235,0.16);
-            --line-light: rgba(224,242,254,0.28);
+            --ink: #0F172A;
+            --ink-soft: #475569;
+            --parchment: #FFFFFF;
+            --parchment-deep: #F8FAFC;
+            --brass: #2563EB;
+            --brass-light: #38BDF8;
+            --sage: #0284C7;
+            --flag: #DC2626;
+            --line: #E2E8F0;
+            --line-light: rgba(56, 189, 248, 0.2);
         }
         *{ box-sizing:border-box; }
         body{
@@ -41,9 +41,10 @@
         .stacks{
             position:relative;
             background:
-                repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 34px),
-                linear-gradient(160deg, var(--ink) 0%, #101A2B 100%);
-            color:var(--parchment);
+                radial-gradient(circle at 85% 15%, rgba(56, 189, 248, 0.12), transparent 280px),
+                radial-gradient(circle at 15% 85%, rgba(37, 99, 235, 0.16), transparent 320px),
+                linear-gradient(160deg, #0B132B 0%, #111C3A 50%, #0F172A 100%);
+            color:#FFFFFF;
             padding:56px 52px;
             display:flex;
             flex-direction:column;
@@ -68,11 +69,13 @@
             font-family:'Newsreader', serif;
             font-size:20px;
             letter-spacing:0.02em;
+            color:#F8FAFC;
         }
         .brandmark .mark{
             width:34px; height:34px;
-            border:1px solid var(--brass-light);
-            border-radius:4px;
+            border:1.5px solid var(--brass-light);
+            background:rgba(56, 189, 248, 0.08);
+            border-radius:6px;
             display:flex; align-items:center; justify-content:center;
             font-family:'Instrument Sans', sans-serif;
             font-weight:700; font-size:13px;
@@ -81,7 +84,7 @@
 
         .stacks-heading{
             margin-top:64px;
-            max-width:360px;
+            max-width:380px;
             position:relative;
             z-index:1;
         }
@@ -92,19 +95,20 @@
             text-transform:uppercase;
             color:var(--brass-light);
             margin:0 0 14px;
+            font-weight:600;
         }
         .stacks-heading h2{
             font-family:'Newsreader', serif;
             font-weight:500;
             font-size:30px;
-            line-height:1.32;
+            line-height:1.35;
             margin:0;
-            color:#F3ECDB;
+            color:#F8FAFC;
         }
         .stacks-heading p{
             font-size:14.5px;
             line-height:1.7;
-            color:rgba(246,239,222,0.62);
+            color:#94A3B8;
             margin:18px 0 0;
         }
 
@@ -115,20 +119,20 @@
             margin-top:44px;
             width:100%;
             max-width:340px;
-            background:var(--parchment);
+            background:#FFFFFF;
             color:var(--ink);
-            border-radius:2px;
+            border-radius:8px;
             padding:20px 22px 18px;
-            transform:rotate(-2.2deg);
-            box-shadow: 0 22px 44px rgba(0,0,0,0.35), 0 2px 0 rgba(0,0,0,0.06);
+            transform:rotate(-1.8deg);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.1);
         }
         .catalog-card::before{
             content:"";
             position:absolute;
             top:0; bottom:0; left:38px;
             width:1px;
-            background: repeating-linear-gradient(180deg, var(--flag) 0 6px, transparent 6px 12px);
-            opacity:0.35;
+            background: repeating-linear-gradient(180deg, var(--brass) 0 6px, transparent 6px 12px);
+            opacity:0.3;
         }
         .catalog-row{
             display:flex;
@@ -161,104 +165,124 @@
             margin-top:12px;
             padding:4px 10px;
             border:1.5px solid var(--sage);
+            background:#F0F9FF;
             color:var(--sage);
             font-size:10px;
             font-weight:700;
             letter-spacing:0.14em;
             text-transform:uppercase;
-            border-radius:3px;
+            border-radius:4px;
             transform:rotate(-3deg);
         }
 
         .stacks-foot{
             position:relative; z-index:1;
             font-size:12px;
-            color:rgba(246,239,222,0.42);
+            color:#94A3B8;
             letter-spacing:0.03em;
         }
 
         /* ---------- RIGHT: request-slip form panel ---------- */
         .slip-panel{
-            background:var(--parchment);
+            background: linear-gradient(160deg, #091328 0%, #0d1b38 50%, #070e1e 100%);
             display:flex;
             align-items:center;
             justify-content:center;
             padding:48px 32px;
+            position:relative;
+        }
+        .slip-panel::before{
+            content:"";
+            position:absolute;
+            inset:0;
+            background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.08), transparent 300px);
+            pointer-events:none;
         }
         .auth-card{
             width:100%;
-            max-width:400px;
+            max-width:420px;
+            position:relative;
+            z-index:1;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 20px;
+            padding: 36px 32px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
         }
         .eyebrow{
-            margin:0 0 8px;
-            font-size:11px;
+            margin:0 0 6px;
+            font-size:11.5px;
             letter-spacing:0.2em;
             text-transform:uppercase;
-            color:var(--brass);
-            font-weight:600;
+            color:#38BDF8;
+            font-weight:700;
         }
         .auth-card h1{
             font-family:'Newsreader', serif;
-            font-weight:500;
-            font-size:32px;
-            margin:0 0 30px;
-            color:var(--ink);
+            font-weight:600;
+            font-size:30px;
+            margin:0 0 24px;
+            color:#FFFFFF;
+            letter-spacing: -0.01em;
         }
 
         .flash-message{
             font-size:13px;
             line-height:1.6;
-            background:#EFE6CE;
-            border:1px solid var(--line);
-            border-left:3px solid var(--brass);
-            padding:11px 14px;
-            border-radius:3px;
-            margin-bottom:20px;
-            color:var(--ink-soft);
+            background:rgba(30, 58, 138, 0.35);
+            border:1px solid rgba(59, 130, 246, 0.4);
+            border-left:4px solid #38BDF8;
+            padding:12px 16px;
+            border-radius:8px;
+            margin-bottom:22px;
+            color:#BFDBFE;
         }
         .error-box{
             font-size:13px;
             line-height:1.6;
-            background:#F6E4E0;
-            border:1px solid rgba(155,74,63,0.35);
-            border-left:3px solid var(--flag);
-            padding:11px 14px;
-            border-radius:3px;
-            margin-bottom:20px;
-            color:#7A342B;
+            background:rgba(239, 68, 68, 0.15);
+            border:1px solid rgba(239, 68, 68, 0.35);
+            border-left:4px solid #EF4444;
+            padding:12px 16px;
+            border-radius:8px;
+            margin-bottom:22px;
+            color:#FCA5A5;
         }
 
         label{
             display:block;
-            font-size:11px;
+            font-size:12.5px;
             font-weight:600;
-            letter-spacing:0.1em;
-            text-transform:uppercase;
-            color:var(--ink-soft);
-            margin-bottom:22px;
+            letter-spacing:0.03em;
+            color:#E2E8F0;
+            margin-bottom:18px;
         }
         input[type="text"], input[type="password"]{
             display:block;
             width:100%;
-            margin-top:9px;
+            margin-top:7px;
             font-family:'Instrument Sans', sans-serif;
-            font-size:15px;
-            color:var(--ink);
-            background:transparent;
-            border:none;
-            border-bottom:1.5px solid var(--line);
-            padding:9px 2px;
-            transition: border-color 0.15s ease;
+            font-size:14.5px;
+            color:#FFFFFF;
+            background: rgba(30, 41, 59, 0.7);
+            border:1.5px solid rgba(255, 255, 255, 0.16);
+            border-radius:8px;
+            padding:12px 15px;
+            box-shadow:inset 0 1px 2px rgba(0,0,0,0.2);
+            transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+            outline:none;
         }
         input[type="text"]::placeholder, input[type="password"]::placeholder{
-            color:rgba(22,35,58,0.32);
+            color:#64748B;
             font-weight:400;
             text-transform:none;
             letter-spacing:0;
         }
         input[type="text"]:focus, input[type="password"]:focus{
-            outline:none;
-            border-bottom-color:var(--brass);
+            background: rgba(30, 41, 59, 0.95);
+            border-color:#38BDF8;
+            box-shadow:0 0 0 3px rgba(56, 189, 248, 0.2);
         }
 
         .check-line{
@@ -266,44 +290,62 @@
             align-items:center;
             gap:9px;
             text-transform:none;
-            font-size:13px;
+            font-size:13.5px;
             letter-spacing:0;
-            font-weight:400;
-            color:var(--ink-soft);
-            margin-bottom:26px;
+            font-weight:500;
+            color:#CBD5E1;
+            margin-bottom:24px;
+            cursor:pointer;
         }
         .check-line input{
-            width:15px; height:15px;
-            accent-color:var(--brass);
+            width:16px; height:16px;
+            accent-color:#2563EB;
+            cursor:pointer;
         }
 
         .btn.primary.full{
             width:100%;
             display:block;
-            background:var(--ink);
-            color:var(--parchment);
-            border:none;
-            border-radius:3px;
-            padding:14px 18px;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color:#FFFFFF;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius:8px;
+            padding:13px 18px;
             font-family:'Instrument Sans', sans-serif;
-            font-size:14px;
-            font-weight:600;
-            letter-spacing:0.03em;
+            font-size:15px;
+            font-weight:700;
+            letter-spacing:0.02em;
             cursor:pointer;
-            transition: background 0.15s ease, transform 0.1s ease;
+            box-shadow:0 4px 14px rgba(2, 132, 199, 0.35);
+            transition: all 0.2s ease;
         }
-        .btn.primary.full:hover{ background:var(--ink-soft); }
+        .btn.primary.full:hover{
+            background: linear-gradient(135deg, #0369a1, #1d4ed8);
+            box-shadow:0 6px 20px rgba(37, 99, 235, 0.5);
+            transform:translateY(-1px);
+        }
         .btn.primary.full:active{ transform:translateY(1px); }
         .btn.primary.full:focus-visible{
-            outline:2px solid var(--brass);
+            outline:2px solid #38BDF8;
             outline-offset:2px;
         }
 
         .auth-note{
-            margin:20px 0 0;
-            font-size:12.5px;
-            color:var(--ink-soft);
+            margin:22px 0 0;
+            font-size:13.5px;
+            color:#94A3B8;
             text-align:center;
+            line-height:1.5;
+        }
+        .auth-note a{
+            color:#38BDF8;
+            text-decoration:none;
+            font-weight:600;
+            transition: color 0.2s ease;
+        }
+        .auth-note a:hover{
+            color:#7DD3FC;
+            text-decoration:underline;
         }
 
         @media (prefers-reduced-motion: reduce){
@@ -390,9 +432,11 @@
                 <input type="checkbox" name="remember" value="1"> Ingat saya
             </label>
 
-            <button type="submit" class="btn primary full">Masuk</button>
+            <button type="submit" class="btn primary full">Masuk ke Sistem</button>
 
-            <p class="auth-note">Belum punya akun? Minta username dan password awal ke Admin.</p>
+            <p class="auth-note">
+                Belum punya akun? <a href="{{ route('register') }}">Daftar Akun Sekarang</a>
+            </p>
         </form>
     </div>
 

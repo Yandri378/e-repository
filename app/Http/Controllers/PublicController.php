@@ -30,8 +30,9 @@ class PublicController extends Controller
             ->get();
 
         $uploadStatuses = RepositorySetting::uploadStatuses();
+        $todayVisitors = \App\Models\DailyVisitor::todayCount();
 
-        return view('pages.home', compact('stats', 'featured', 'uploadStatuses'));
+        return view('pages.home', compact('stats', 'featured', 'uploadStatuses', 'todayVisitors'));
     }
 
     public function repository(Request $request, ?string $kategori = null)
