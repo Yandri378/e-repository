@@ -2,13 +2,23 @@
 
 @section('title', 'Daftar Akun Mahasiswa & Dosen')
 
-@section('content')
-    <section class="auth-shell" style="min-height: 85vh; display: flex; align-items: center; justify-content: center; padding: 2.5rem 1rem;">
-        <div class="auth-card wide" style="width: 100%; max-width: 620px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 16px; padding: clamp(1.5rem, 5vw, 2.5rem); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+    <style>
+        @media (max-width: 640px) {
+            .register-form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 14px !important;
+            }
+            .register-form-grid > div {
+                grid-column: span 1 !important;
+            }
+        }
+    </style>
+    <section class="auth-shell" style="min-height: 85vh; display: flex; align-items: center; justify-content: center; padding: clamp(1rem, 4vw, 2.5rem) 1rem;">
+        <div class="auth-card wide" style="width: 100%; max-width: 620px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 16px; padding: clamp(1.25rem, 5vw, 2.5rem); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
             
             <div style="text-align: center; margin-bottom: 2rem;">
                 <p class="eyebrow" style="color: #38BDF8; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; margin: 0 0 6px;">Pendaftaran Mandiri</p>
-                <h1 style="font-size: clamp(1.75rem, 4vw, 2.2rem); font-weight: 700; color: #FFFFFF; margin: 0 0 8px;">Buat Akun Repositori</h1>
+                <h1 style="font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 700; color: #FFFFFF; margin: 0 0 8px;">Buat Akun Repositori</h1>
                 <p style="font-size: 14px; color: #94A3B8; margin: 0;">Silakan isi formulir di bawah untuk mendaftar sebagai Mahasiswa atau Dosen.</p>
             </div>
 
@@ -46,7 +56,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="register-form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     {{-- Nama Lengkap --}}
                     <div style="grid-column: span 2;">
                         <label style="display: block; font-size: 12px; font-weight: 600; color: #E2E8F0; margin-bottom: 6px;">Nama Lengkap (dengan Gelar jika Dosen) <span style="color: #EF4444;">*</span></label>
