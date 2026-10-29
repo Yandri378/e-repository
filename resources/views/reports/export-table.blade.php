@@ -66,10 +66,10 @@
 </head>
 <body>
     <div class="header-title">UNIVERSITAS METAMEDIA</div>
-    <div class="header-subtitle">LAPORAN DATA DOKUMEN REPOSITORY</div>
+    <div class="header-subtitle">LAPORAN DATA DOKUMEN {{ !empty($kategoriLabel) ? strtoupper($kategoriLabel) : 'REPOSITORY' }}</div>
     <div class="header-meta">
         Tanggal Ekspor: {{ date('d F Y, H:i') }} WIB
-        @if(!empty($filterText)) | Filter: {{ $filterText }} @endif
+        @if(!empty($filterText)) | {{ $filterText }} @endif
     </div>
 
     <table>

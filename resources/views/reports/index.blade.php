@@ -166,48 +166,243 @@
             </div>
         </section>
 
-        {{-- ============ KATEGORI BREAKDOWN CHART CARD ============ --}}
-        <section class="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">Distribusi Kategori Dokumen</h2>
-            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {{-- Skripsi --}}
-                <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                    <div class="flex items-center justify-between text-xs font-bold text-blue-900">
-                        <span>Skripsi</span>
-                        <span>{{ number_format($countSkripsi) }}</span>
+        {{-- ============ EKSPOR & DISTRIBUSI DOKUMEN PER KATEGORI & TAHUN ============ --}}
+        <section class="mt-8 rounded-2xl sm:rounded-3xl border border-blue-100/90 bg-white p-5 sm:p-7 shadow-sm shadow-blue-900/5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Ekspor Per Kategori & Tahun
+                        </span>
+                        <span class="text-xs font-medium text-slate-400">| Unduh Langsung Excel & PDF</span>
                     </div>
-                    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-blue-200/60">
-                        <div class="h-full bg-blue-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countSkripsi / $totalDokumen) * 100 : 0 }}%"></div>
+                    <h2 class="mt-2 text-lg font-extrabold text-slate-900 sm:text-xl">
+                        Unduh Laporan Repository Berdasarkan Kategori & Tahun
+                    </h2>
+                    <p class="mt-1 text-xs text-slate-500 sm:text-sm">
+                        Pilih tahun yang diinginkan untuk <strong>Skripsi</strong>, <strong>Magang</strong>, <strong>PKM</strong>, atau <strong>Penelitian Dosen</strong> lalu klik tombol Excel atau PDF.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="openModal('modal-export')" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition shadow-sm">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        Pusat Ekspor Lengkap
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+                {{-- 1. KARTU SKRIPSI --}}
+                <div class="group relative flex flex-col justify-between rounded-2xl border border-blue-200/90 bg-gradient-to-b from-blue-50/70 via-white to-blue-50/30 p-5 shadow-sm transition hover:border-blue-400 hover:shadow-md">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white shadow-sm shadow-blue-600/30">
+                                🎓 Skripsi
+                            </span>
+                            <span class="text-xs font-bold text-blue-900">{{ number_format($countSkripsi) }} berkas</span>
+                        </div>
+                        <h3 class="mt-3 text-base font-bold text-slate-900">Laporan Skripsi</h3>
+                        <p class="mt-0.5 text-xs text-slate-500">Tugas akhir sarjana / skripsi mahasiswa.</p>
+
+                        <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-blue-100">
+                            <div class="h-full bg-blue-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countSkripsi / $totalDokumen) * 100 : 0 }}%"></div>
+                        </div>
+
+                        {{-- Dropdown Pilih Tahun --}}
+                        <div class="mt-4">
+                            <label for="export-year-skripsi" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                                Pilih Tahun Skripsi:
+                            </label>
+                            <div class="relative">
+                                <select id="export-year-skripsi" onchange="updateCategoryExportLinks('skripsi')" class="w-full appearance-none rounded-xl border border-blue-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm cursor-pointer">
+                                    <option value="">Semua Tahun ({{ number_format($countSkripsi) }} berkas)</option>
+                                    @foreach ($tahunList as $th)
+                                        @php $thCount = $kategoriTahunCounts->get('skripsi')?->get($th) ?? 0; @endphp
+                                        <option value="{{ $th }}" {{ request('kategori') === 'skripsi' && request('tahun') == $th ? 'selected' : '' }}>
+                                            Tahun {{ $th }} ({{ $thCount }} berkas)
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-blue-600">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Tombol Unduh Excel & PDF --}}
+                    <div class="mt-4 pt-3 border-t border-blue-100">
+                        <div class="grid grid-cols-2 gap-2">
+                            <a id="btn-export-skripsi-excel" href="{{ route('reports.export', ['format' => 'excel', 'kategori' => 'skripsi']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition" title="Unduh Laporan Skripsi format Excel">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                Excel
+                            </a>
+                            <a id="btn-export-skripsi-pdf" href="{{ route('reports.export', ['format' => 'pdf', 'kategori' => 'skripsi']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition" title="Unduh Laporan Skripsi format PDF">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                                PDF
+                            </a>
+                        </div>
                     </div>
                 </div>
-                {{-- Magang --}}
-                <div class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
-                    <div class="flex items-center justify-between text-xs font-bold text-indigo-900">
-                        <span>Magang</span>
-                        <span>{{ number_format($countMagang) }}</span>
+
+                {{-- 2. KARTU MAGANG --}}
+                <div class="group relative flex flex-col justify-between rounded-2xl border border-indigo-200/90 bg-gradient-to-b from-indigo-50/70 via-white to-indigo-50/30 p-5 shadow-sm transition hover:border-indigo-400 hover:shadow-md">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white shadow-sm shadow-indigo-600/30">
+                                💼 Magang
+                            </span>
+                            <span class="text-xs font-bold text-indigo-900">{{ number_format($countMagang) }} berkas</span>
+                        </div>
+                        <h3 class="mt-3 text-base font-bold text-slate-900">Laporan Magang</h3>
+                        <p class="mt-0.5 text-xs text-slate-500">Kerja Praktik & Magang industri mahasiswa.</p>
+
+                        <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-indigo-100">
+                            <div class="h-full bg-indigo-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countMagang / $totalDokumen) * 100 : 0 }}%"></div>
+                        </div>
+
+                        {{-- Dropdown Pilih Tahun --}}
+                        <div class="mt-4">
+                            <label for="export-year-magang" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                                Pilih Tahun Magang:
+                            </label>
+                            <div class="relative">
+                                <select id="export-year-magang" onchange="updateCategoryExportLinks('magang')" class="w-full appearance-none rounded-xl border border-indigo-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm cursor-pointer">
+                                    <option value="">Semua Tahun ({{ number_format($countMagang) }} berkas)</option>
+                                    @foreach ($tahunList as $th)
+                                        @php $thCount = $kategoriTahunCounts->get('magang')?->get($th) ?? 0; @endphp
+                                        <option value="{{ $th }}" {{ request('kategori') === 'magang' && request('tahun') == $th ? 'selected' : '' }}>
+                                            Tahun {{ $th }} ({{ $thCount }} berkas)
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-indigo-600">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-indigo-200/60">
-                        <div class="h-full bg-indigo-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countMagang / $totalDokumen) * 100 : 0 }}%"></div>
+
+                    {{-- Tombol Unduh Excel & PDF --}}
+                    <div class="mt-4 pt-3 border-t border-indigo-100">
+                        <div class="grid grid-cols-2 gap-2">
+                            <a id="btn-export-magang-excel" href="{{ route('reports.export', ['format' => 'excel', 'kategori' => 'magang']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition" title="Unduh Laporan Magang format Excel">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                Excel
+                            </a>
+                            <a id="btn-export-magang-pdf" href="{{ route('reports.export', ['format' => 'pdf', 'kategori' => 'magang']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition" title="Unduh Laporan Magang format PDF">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                                PDF
+                            </a>
+                        </div>
                     </div>
                 </div>
-                {{-- PKM --}}
-                <div class="rounded-xl border border-purple-100 bg-purple-50/50 p-4">
-                    <div class="flex items-center justify-between text-xs font-bold text-purple-900">
-                        <span>PKM</span>
-                        <span>{{ number_format($countPkm) }}</span>
+
+                {{-- 3. KARTU PKM --}}
+                <div class="group relative flex flex-col justify-between rounded-2xl border border-purple-200/90 bg-gradient-to-b from-purple-50/70 via-white to-purple-50/30 p-5 shadow-sm transition hover:border-purple-400 hover:shadow-md">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white shadow-sm shadow-purple-600/30">
+                                💡 PKM
+                            </span>
+                            <span class="text-xs font-bold text-purple-900">{{ number_format($countPkm) }} berkas</span>
+                        </div>
+                        <h3 class="mt-3 text-base font-bold text-slate-900">Laporan PKM</h3>
+                        <p class="mt-0.5 text-xs text-slate-500">Program Kreativitas Mahasiswa Dikti.</p>
+
+                        <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-purple-100">
+                            <div class="h-full bg-purple-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countPkm / $totalDokumen) * 100 : 0 }}%"></div>
+                        </div>
+
+                        {{-- Dropdown Pilih Tahun --}}
+                        <div class="mt-4">
+                            <label for="export-year-pkm" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                                Pilih Tahun PKM:
+                            </label>
+                            <div class="relative">
+                                <select id="export-year-pkm" onchange="updateCategoryExportLinks('pkm')" class="w-full appearance-none rounded-xl border border-purple-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-slate-800 transition focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 shadow-sm cursor-pointer">
+                                    <option value="">Semua Tahun ({{ number_format($countPkm) }} berkas)</option>
+                                    @foreach ($tahunList as $th)
+                                        @php $thCount = $kategoriTahunCounts->get('pkm')?->get($th) ?? 0; @endphp
+                                        <option value="{{ $th }}" {{ request('kategori') === 'pkm' && request('tahun') == $th ? 'selected' : '' }}>
+                                            Tahun {{ $th }} ({{ $thCount }} berkas)
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-purple-600">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-purple-200/60">
-                        <div class="h-full bg-purple-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countPkm / $totalDokumen) * 100 : 0 }}%"></div>
+
+                    {{-- Tombol Unduh Excel & PDF --}}
+                    <div class="mt-4 pt-3 border-t border-purple-100">
+                        <div class="grid grid-cols-2 gap-2">
+                            <a id="btn-export-pkm-excel" href="{{ route('reports.export', ['format' => 'excel', 'kategori' => 'pkm']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition" title="Unduh Laporan PKM format Excel">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                Excel
+                            </a>
+                            <a id="btn-export-pkm-pdf" href="{{ route('reports.export', ['format' => 'pdf', 'kategori' => 'pkm']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition" title="Unduh Laporan PKM format PDF">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                                PDF
+                            </a>
+                        </div>
                     </div>
                 </div>
-                {{-- Penelitian --}}
-                <div class="rounded-xl border border-sky-100 bg-sky-50/50 p-4">
-                    <div class="flex items-center justify-between text-xs font-bold text-sky-900">
-                        <span>Penelitian</span>
-                        <span>{{ number_format($countPenelitian) }}</span>
+
+                {{-- 4. KARTU PENELITIAN DOSEN --}}
+                <div class="group relative flex flex-col justify-between rounded-2xl border border-sky-200/90 bg-gradient-to-b from-sky-50/70 via-white to-sky-50/30 p-5 shadow-sm transition hover:border-sky-400 hover:shadow-md">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-600 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white shadow-sm shadow-sky-600/30">
+                                🔬 Penelitian
+                            </span>
+                            <span class="text-xs font-bold text-sky-900">{{ number_format($countPenelitian) }} berkas</span>
+                        </div>
+                        <h3 class="mt-3 text-base font-bold text-slate-900">Penelitian Dosen</h3>
+                        <p class="mt-0.5 text-xs text-slate-500">Riset, publikasi & hibah penelitian dosen.</p>
+
+                        <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-sky-100">
+                            <div class="h-full bg-sky-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countPenelitian / $totalDokumen) * 100 : 0 }}%"></div>
+                        </div>
+
+                        {{-- Dropdown Pilih Tahun --}}
+                        <div class="mt-4">
+                            <label for="export-year-penelitian" class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+                                Pilih Tahun Penelitian:
+                            </label>
+                            <div class="relative">
+                                <select id="export-year-penelitian" onchange="updateCategoryExportLinks('penelitian')" class="w-full appearance-none rounded-xl border border-sky-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-slate-800 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 shadow-sm cursor-pointer">
+                                    <option value="">Semua Tahun ({{ number_format($countPenelitian) }} berkas)</option>
+                                    @foreach ($tahunList as $th)
+                                        @php $thCount = $kategoriTahunCounts->get('penelitian')?->get($th) ?? 0; @endphp
+                                        <option value="{{ $th }}" {{ request('kategori') === 'penelitian' && request('tahun') == $th ? 'selected' : '' }}>
+                                            Tahun {{ $th }} ({{ $thCount }} berkas)
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-sky-600">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-sky-200/60">
-                        <div class="h-full bg-sky-600 rounded-full" style="width: {{ $totalDokumen > 0 ? ($countPenelitian / $totalDokumen) * 100 : 0 }}%"></div>
+
+                    {{-- Tombol Unduh Excel & PDF --}}
+                    <div class="mt-4 pt-3 border-t border-sky-100">
+                        <div class="grid grid-cols-2 gap-2">
+                            <a id="btn-export-penelitian-excel" href="{{ route('reports.export', ['format' => 'excel', 'kategori' => 'penelitian']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition" title="Unduh Laporan Penelitian format Excel">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                Excel
+                            </a>
+                            <a id="btn-export-penelitian-pdf" href="{{ route('reports.export', ['format' => 'pdf', 'kategori' => 'penelitian']) }}" class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition" title="Unduh Laporan Penelitian format PDF">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                                PDF
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -303,7 +498,7 @@
                                     <th class="px-4 py-3.5 text-center">Tahun</th>
                                     <th class="px-4 py-3.5">Status</th>
                                     <th class="px-4 py-3.5">Program Studi</th>
-                                    <th class="px-4 py-3.5 text-right">Aksi (CRUD)</th>
+                                    <th class="px-5 py-3.5 text-center whitespace-nowrap">Aksi Dokumen</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -342,22 +537,27 @@
                                         <td class="px-4 py-4 text-xs text-slate-600 whitespace-nowrap">
                                             {{ $doc->programStudi?->nama ?: '-' }}
                                         </td>
-                                        <td class="px-4 py-4 text-right whitespace-nowrap">
-                                            <div class="flex items-center justify-end gap-1.5">
-                                                {{-- Detail --}}
-                                                <button type="button" onclick="openDetailModal({{ json_encode($doc) }})" class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition" title="Lihat Detail">
-                                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <td class="px-5 py-4 text-center whitespace-nowrap">
+                                            <div class="inline-flex items-center justify-center gap-1.5">
+                                                {{-- Tombol Detail --}}
+                                                <button type="button" onclick="openDetailModal({{ json_encode($doc) }})" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900" title="Lihat detail lengkap dokumen ini">
+                                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                    <span>Detail</span>
                                                 </button>
-                                                {{-- Edit --}}
-                                                <button type="button" onclick="openEditModal({{ json_encode($doc) }})" class="rounded-lg border border-blue-200 bg-blue-50 p-1.5 text-blue-700 hover:bg-blue-100 transition" title="Edit Dokumen">
-                                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+
+                                                {{-- Tombol Edit --}}
+                                                <button type="button" onclick="openEditModal({{ json_encode($doc) }})" class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:border-blue-400 hover:bg-blue-600 hover:text-white" title="Ubah informasi dokumen">
+                                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                    <span>Edit</span>
                                                 </button>
-                                                {{-- Delete --}}
-                                                <form method="POST" action="{{ route('reports.destroy', $doc) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data dokumen ini secara permanen?')">
+
+                                                {{-- Tombol Hapus --}}
+                                                <form method="POST" action="{{ route('reports.destroy', $doc) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data dokumen: &quot;{{ addslashes($doc->judul) }}&quot;?')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition" title="Hapus Dokumen">
-                                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition hover:border-rose-400 hover:bg-rose-600 hover:text-white" title="Hapus dokumen ini secara permanen">
+                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                        <span>Hapus</span>
                                                     </button>
                                                 </form>
                                             </div>
@@ -636,6 +836,14 @@
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Abstrak</span>
                 <p id="detail-abstrak" class="mt-1 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600 max-h-48 overflow-y-auto"></p>
             </div>
+
+            <div id="detail-file-container" class="pt-2 hidden">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Berkas Dokumen Lampiran</span>
+                <a id="detail-file-link" href="#" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-blue-50 border border-blue-200 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition shadow-sm">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                    <span>Buka / Unduh File PDF Dokumen</span>
+                </a>
+            </div>
         </div>
 
         <div class="mt-6 flex items-center justify-end border-t border-slate-100 pt-4">
@@ -663,22 +871,85 @@
         </div>
 
         <div class="mt-5 space-y-4">
-            {{-- Opsi 1: Ekspor Semua Data --}}
-            <div class="rounded-2xl border border-blue-100 bg-blue-50/40 p-4.5 transition hover:border-blue-200">
+            {{-- Opsi 1: Ekspor Kustom Fleksibel (Pilih Kategori, Tahun & Status) --}}
+            <div class="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/60 via-white to-indigo-50/40 p-5 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white shadow-sm">1</span>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-blue-950 sm:text-sm">
+                        Ekspor Fleksibel Berdasarkan Kategori & Tahun
+                    </h4>
+                </div>
+                <p class="mt-1 text-xs text-slate-500">
+                    Tentukan kombinasi kategori dokumen (Skripsi, Magang, PKM, Penelitian), tahun berkas, dan status sesuai kebutuhan laporan Anda.
+                </p>
+
+                <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                            Kategori Dokumen:
+                        </label>
+                        <select id="modal-custom-kategori" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                            <option value="">Semua Kategori</option>
+                            <option value="skripsi">🎓 Skripsi</option>
+                            <option value="magang">💼 Magang</option>
+                            <option value="pkm">💡 PKM</option>
+                            <option value="penelitian">🔬 Penelitian Dosen</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                            Pilih Tahun:
+                        </label>
+                        <select id="modal-custom-tahun" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                            <option value="">Semua Tahun</option>
+                            @foreach ($tahunList as $th)
+                                <option value="{{ $th }}" {{ request('tahun') == $th ? 'selected' : '' }}>Tahun {{ $th }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
+                            Status Verifikasi:
+                        </label>
+                        <select id="modal-custom-status" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                            <option value="">Semua Status</option>
+                            <option value="terverifikasi">Terverifikasi</option>
+                            <option value="pending">Pending</option>
+                            <option value="ditolak">Ditolak</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t border-blue-100">
+                    <button type="button" onclick="triggerModalCustomExport('excel')" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Unduh Format Excel (.xls)
+                    </button>
+                    <button type="button" onclick="triggerModalCustomExport('pdf')" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                        Unduh Format PDF (.pdf)
+                    </button>
+                </div>
+            </div>
+
+            {{-- Opsi 2: Ekspor Semua Data (Seluruh Tahun & Kategori) --}}
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition hover:border-slate-300">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900">
-                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">1</span>
-                            Ekspor Semua Data (Seluruh Tahun)
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-[10px] text-white">2</span>
+                            Ekspor Seluruh Repository (Semua Tahun & Kategori)
                         </span>
-                        <p class="mt-1 text-xs text-slate-600">Unduh seluruh berkas repository tanpa batasan tahun atau kategori.</p>
+                        <p class="mt-1 text-xs text-slate-500">Unduh seluruh berkas repository tanpa batasan apapun.</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <a href="{{ route('reports.export', ['format' => 'excel', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition">
+                        <a href="{{ route('reports.export', ['format' => 'excel', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-900 transition">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                             Excel (Semua)
                         </a>
-                        <a href="{{ route('reports.export', ['format' => 'pdf', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                        <a href="{{ route('reports.export', ['format' => 'pdf', 'scope' => 'all']) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-900 transition">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
                             PDF (Semua)
                         </a>
@@ -686,55 +957,27 @@
                 </div>
             </div>
 
-            {{-- Opsi 2: Ekspor Per Tahun --}}
-            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4.5 transition hover:border-indigo-200">
-                <div class="flex flex-col gap-3">
-                    <div>
-                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-900">
-                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-white">2</span>
-                            Ekspor Spesifik Per Tahun
-                        </span>
-                        <p class="mt-1 text-xs text-slate-600">Pilih tahun yang diinginkan untuk mengunduh laporan berkas pada tahun tersebut.</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2.5 pt-1">
-                        <select id="export-select-tahun" onchange="updateYearExportLinks()" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm">
-                            @foreach ($tahunList as $th)
-                                <option value="{{ $th }}" {{ request('tahun') == $th ? 'selected' : '' }}>Tahun {{ $th }}</option>
-                            @endforeach
-                        </select>
-                        <a id="btn-export-year-excel" href="{{ route('reports.export', ['format' => 'excel', 'tahun' => request('tahun') ?: ($tahunList[0] ?? date('Y'))]) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                            Excel Per Tahun
-                        </a>
-                        <a id="btn-export-year-pdf" href="{{ route('reports.export', ['format' => 'pdf', 'tahun' => request('tahun') ?: ($tahunList[0] ?? date('Y'))]) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                            PDF Per Tahun
-                        </a>
-                    </div>
-                </div>
-            </div>
-
             {{-- Opsi 3: Ekspor Sesuai Filter Halaman Ini --}}
-            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4.5 transition hover:border-slate-300">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition hover:border-slate-300">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-800">
                             <span class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-[10px] text-white">3</span>
-                            Ekspor Sesuai Filter Aktif
+                            Ekspor Sesuai Filter Tabel Halaman Ini
                         </span>
                         <p class="mt-1 text-xs text-slate-500">
                             Unduh data sesuai kombinasi pencarian, kategori, tahun, & status pada tabel saat ini.
                             @if(request()->anyFilled(['search', 'kategori', 'tahun', 'status']))
-                                <span class="font-semibold text-blue-600 block sm:inline">(Ada filter aktif)</span>
+                                <span class="font-semibold text-blue-600 block sm:inline">(Filter aktif terdeteksi)</span>
                             @endif
                         </p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <a href="{{ route('reports.export', ['format' => 'excel'] + request()->query()) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition">
+                        <a href="{{ route('reports.export', ['format' => 'excel'] + request()->query()) }}" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                             Excel Filter
                         </a>
-                        <a href="{{ route('reports.export', ['format' => 'pdf'] + request()->query()) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition">
+                        <a href="{{ route('reports.export', ['format' => 'pdf'] + request()->query()) }}" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
                             PDF Filter
                         </a>
@@ -781,19 +1024,40 @@
         openModal('modal-create');
     }
 
-    function updateYearExportLinks() {
-        const select = document.getElementById('export-select-tahun');
+    function updateCategoryExportLinks(kategori) {
+        const select = document.getElementById('export-year-' + kategori);
         if (!select) return;
         const year = select.value;
-        const btnExcel = document.getElementById('btn-export-year-excel');
-        const btnPdf = document.getElementById('btn-export-year-pdf');
+        const btnExcel = document.getElementById('btn-export-' + kategori + '-excel');
+        const btnPdf = document.getElementById('btn-export-' + kategori + '-pdf');
 
-        if (btnExcel) {
-            btnExcel.href = `{{ url('/laporan/export/excel') }}?tahun=${year}`;
+        const baseUrlExcel = "{{ url('/laporan/export/excel') }}";
+        const baseUrlPdf = "{{ url('/laporan/export/pdf') }}";
+
+        let params = '?kategori=' + encodeURIComponent(kategori);
+        if (year) {
+            params += '&tahun=' + encodeURIComponent(year);
         }
-        if (btnPdf) {
-            btnPdf.href = `{{ url('/laporan/export/pdf') }}?tahun=${year}`;
-        }
+
+        if (btnExcel) btnExcel.href = baseUrlExcel + params;
+        if (btnPdf) btnPdf.href = baseUrlPdf + params;
+    }
+
+    function triggerModalCustomExport(format) {
+        const kategori = document.getElementById('modal-custom-kategori').value;
+        const tahun = document.getElementById('modal-custom-tahun').value;
+        const status = document.getElementById('modal-custom-status').value;
+
+        const baseUrl = format === 'excel' ? "{{ url('/laporan/export/excel') }}" : "{{ url('/laporan/export/pdf') }}";
+        const params = new URLSearchParams();
+
+        if (kategori) params.append('kategori', kategori);
+        if (tahun) params.append('tahun', tahun);
+        if (status) params.append('status', status);
+
+        const queryString = params.toString();
+        const finalUrl = baseUrl + (queryString ? '?' + queryString : '');
+        window.location.href = finalUrl;
     }
 
     function openEditModal(doc) {
@@ -819,6 +1083,17 @@
         document.getElementById('detail-status').innerText = doc.status || '-';
         document.getElementById('detail-prodi').innerText = doc.program_studi ? doc.program_studi.nama : '-';
         document.getElementById('detail-abstrak').innerText = doc.abstrak || 'Tidak ada abstrak yang dicantumkan.';
+
+        const fileContainer = document.getElementById('detail-file-container');
+        const fileLink = document.getElementById('detail-file-link');
+        if (fileContainer && fileLink) {
+            if (doc.file_dokumen) {
+                fileContainer.classList.remove('hidden');
+                fileLink.href = `/storage/${doc.file_dokumen}`;
+            } else {
+                fileContainer.classList.add('hidden');
+            }
+        }
 
         openModal('modal-detail');
     }

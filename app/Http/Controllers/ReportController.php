@@ -50,11 +50,26 @@ class ReportController extends Controller
         $countPenelitian = RepositoryDocument::where('kategori', 'penelitian')->count();
 
         $prodiList = ProgramStudi::where('aktif', true)->get();
-        $tahunList = RepositoryDocument::select('tahun')
+
+        $dbYears = RepositoryDocument::select('tahun')
             ->distinct()
             ->whereNotNull('tahun')
+            ->pluck('tahun')
+            ->toArray();
+
+        $defaultYears = range((int) date('Y'), (int) date('Y') - 5);
+        $tahunList = collect(array_values(array_unique(array_merge($dbYears, $defaultYears))))
+            ->map(fn ($y) => (int) $y)
+            ->sortDesc()
+            ->values();
+
+        $kategoriTahunCounts = RepositoryDocument::selectRaw('kategori, tahun, COUNT(*) as total')
+            ->whereNotNull('tahun')
+            ->groupBy('kategori', 'tahun')
             ->orderByDesc('tahun')
-            ->pluck('tahun');
+            ->get()
+            ->groupBy('kategori')
+            ->map(fn ($items) => $items->pluck('total', 'tahun'));
 
         return view('reports.index', compact(
             'reports',
@@ -73,7 +88,8 @@ class ReportController extends Controller
             'countPkm',
             'countPenelitian',
             'prodiList',
-            'tahunList'
+            'tahunList',
+            'kategoriTahunCounts'
         ));
     }
 
@@ -172,14 +188,24 @@ class ReportController extends Controller
         $statusFilter   = $request->query('status');
         $searchQuery    = $request->query('search');
 
-        // Jika scope = all atau tahun = all, hapus batasan filter
+        // Jika scope = all, hapus batasan filter
         if ($scope === 'all') {
             $kategoriFilter = null;
             $tahunFilter    = null;
             $statusFilter   = null;
             $searchQuery    = null;
-        } elseif ($tahunFilter === 'all' || $tahunFilter === '') {
+        }
+
+        if ($tahunFilter === 'all' || $tahunFilter === '') {
             $tahunFilter = null;
+        }
+
+        if ($kategoriFilter === 'all' || $kategoriFilter === '') {
+            $kategoriFilter = null;
+        }
+
+        if ($statusFilter === 'all' || $statusFilter === '') {
+            $statusFilter = null;
         }
 
         $documents = RepositoryDocument::with(['programStudi', 'owner', 'dosenPembimbing'])
@@ -197,33 +223,67 @@ class ReportController extends Controller
             ->latest()
             ->get();
 
+        $kategoriDisplayNames = [
+            'skripsi'    => 'Skripsi',
+            'magang'     => 'Magang',
+            'pkm'        => 'PKM',
+            'penelitian' => 'Penelitian Dosen',
+        ];
+
         $filterLabels = [];
         if ($scope === 'all') {
             $filterLabels[] = 'Semua Data Dokumen (Seluruh Tahun)';
         } else {
-            if ($tahunFilter) $filterLabels[] = 'Tahun: ' . $tahunFilter;
-            if ($kategoriFilter) $filterLabels[] = 'Kategori: ' . ucfirst($kategoriFilter);
-            if ($statusFilter) $filterLabels[] = 'Status: ' . ucfirst($statusFilter);
-            if ($searchQuery) $filterLabels[] = 'Pencarian: "' . $searchQuery . '"';
-            if (empty($filterLabels)) $filterLabels[] = 'Semua Data Dokumen';
+            if ($kategoriFilter) {
+                $filterLabels[] = 'Kategori: ' . ($kategoriDisplayNames[$kategoriFilter] ?? ucfirst($kategoriFilter));
+            }
+            if ($tahunFilter) {
+                $filterLabels[] = 'Tahun: ' . $tahunFilter;
+            } else {
+                $filterLabels[] = 'Semua Tahun';
+            }
+            if ($statusFilter) {
+                $filterLabels[] = 'Status: ' . ucfirst($statusFilter);
+            }
+            if ($searchQuery) {
+                $filterLabels[] = 'Pencarian: "' . $searchQuery . '"';
+            }
+            if (empty($filterLabels)) {
+                $filterLabels[] = 'Semua Data Dokumen';
+            }
         }
         $filterText = implode(' | ', $filterLabels);
 
-        $filenameSuffix = $tahunFilter ? "tahun-{$tahunFilter}" : ($scope === 'all' ? 'semua' : 'data');
+        $nameParts = ['laporan'];
+        if ($kategoriFilter) {
+            $nameParts[] = $kategoriFilter === 'penelitian' ? 'penelitian-dosen' : $kategoriFilter;
+        } else {
+            $nameParts[] = 'repository';
+        }
+
+        if ($tahunFilter) {
+            $nameParts[] = 'tahun-' . $tahunFilter;
+        } elseif ($scope === 'all') {
+            $nameParts[] = 'semua-tahun';
+        }
+
+        $filenamePrefix = implode('-', $nameParts);
         $timestamp = date('Ymd_His');
 
+        $kategoriLabel = $kategoriFilter ? ($kategoriDisplayNames[$kategoriFilter] ?? strtoupper($kategoriFilter)) : null;
+
         if ($format === 'excel') {
-            $html = view('reports.export-table', compact('documents', 'filterText'))->render();
+            $html = view('reports.export-table', compact('documents', 'filterText', 'kategoriLabel'))->render();
 
             return response($html, 200, [
                 'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="laporan-repository-' . $filenameSuffix . '-' . $timestamp . '.xls"',
+                'Content-Disposition' => 'attachment; filename="' . $filenamePrefix . '-' . $timestamp . '.xls"',
             ]);
         }
 
-        return response($this->generatePdf($documents, $filterText), 200, [
+        return response($this->generatePdf($documents, $filterText, $kategoriLabel), 200, [
             'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="laporan-repository-' . $filenameSuffix . '-' . $timestamp . '.pdf"',
+            'Content-Disposition' => 'attachment; filename="' . $filenamePrefix . '-' . $timestamp . '.pdf"',
         ]);
     }
 
@@ -240,15 +300,17 @@ class ReportController extends Controller
             ->get();
     }
 
-    private function generatePdf($documents, string $filterText = ''): string
+    private function generatePdf($documents, string $filterText = '', ?string $kategoriLabel = null): string
     {
-        $pdf = new class($filterText) extends \FPDF {
+        $pdf = new class($filterText, $kategoriLabel) extends \FPDF {
             private string $filterText;
+            private ?string $kategoriLabel;
 
-            public function __construct(string $filterText)
+            public function __construct(string $filterText, ?string $kategoriLabel = null)
             {
                 parent::__construct('L', 'mm', 'A4');
                 $this->filterText = $filterText;
+                $this->kategoriLabel = $kategoriLabel;
                 $this->AliasNbPages();
                 $this->SetMargins(14, 14, 14);
                 $this->SetAutoPageBreak(true, 18);
@@ -275,7 +337,8 @@ class ReportController extends Controller
                 }
                 $this->SetFont('Arial', 'B', 10);
                 $this->SetTextColor(51, 65, 85);
-                $this->Cell(0, 4.5, 'LAPORAN DATA DOKUMEN REPOSITORY', 0, 1, 'L');
+                $titleText = 'LAPORAN DATA DOKUMEN ' . ($this->kategoriLabel ? strtoupper($this->kategoriLabel) : 'REPOSITORY');
+                $this->Cell(0, 4.5, $this->encode($titleText), 0, 1, 'L');
 
                 if (file_exists($logoPath)) {
                     $this->SetX(33);
