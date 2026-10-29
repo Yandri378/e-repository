@@ -109,6 +109,39 @@ class AuthController extends Controller
         ])['role'];
 
         $identityField = $role === 'mahasiswa' ? 'nim' : 'nidn';
+        $emailInput = trim((string) $request->input('email', ''));
+        $identityInput = trim((string) $request->input($identityField, ''));
+
+        // Jika sebelumnya ada akun yang 'ditolak' dengan email atau NIM/NIDN yang sama,
+        // bersihkan data yang ditolak agar pengguna bisa mendaftar ulang secara bersih.
+        User::where('status_akun', 'ditolak')
+            ->where(function ($q) use ($emailInput, $identityField, $identityInput) {
+                if ($emailInput !== '') {
+                    $q->where('email', $emailInput);
+                }
+                if ($identityInput !== '') {
+                    $q->orWhere($identityField, $identityInput);
+                }
+            })
+            ->delete();
+
+        // Cek jika akun masih ada tapi berstatus 'nonaktif' (dinonaktifkan sementara oleh admin, bukan dihapus)
+        $inactiveAccount = User::where('status_akun', 'nonaktif')
+            ->where(function ($q) use ($emailInput, $identityField, $identityInput) {
+                if ($emailInput !== '') {
+                    $q->where('email', $emailInput);
+                }
+                if ($identityInput !== '') {
+                    $q->orWhere($identityField, $identityInput);
+                }
+            })
+            ->first();
+
+        if ($inactiveAccount) {
+            return back()->withInput()->withErrors([
+                'email' => 'Akun dengan email atau ' . strtoupper($identityField) . ' ini masih tersimpan dengan status NONAKTIF oleh Admin (bukan dihapus permanen). Silakan hubungi Admin untuk mengaktifkan kembali akun Anda atau meminta Admin menghapus akun secara permanen agar dapat didaftarkan ulang.',
+            ]);
+        }
 
         $rules = [
             'role' => ['required', Rule::in(['mahasiswa', 'dosen'])],
@@ -126,11 +159,11 @@ class AuthController extends Controller
             'program_studi_id.exists' => 'Program studi yang dipilih tidak valid.',
             'email.required' => 'Alamat email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Alamat email ini sudah terdaftar.',
+            'email.unique' => 'Alamat email ini sudah terdaftar pada akun aktif. Silakan masuk ke akun Anda atau gunakan email lain.',
             'nim.required' => 'NIM Mahasiswa wajib diisi.',
-            'nim.unique' => 'NIM ini sudah terdaftar.',
+            'nim.unique' => 'NIM ini sudah terdaftar pada akun aktif.',
             'nidn.required' => 'NIDN Dosen wajib diisi.',
-            'nidn.unique' => 'NIDN ini sudah terdaftar.',
+            'nidn.unique' => 'NIDN ini sudah terdaftar pada akun aktif.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
@@ -148,14 +181,11 @@ class AuthController extends Controller
             'whatsapp' => $data['whatsapp'] ?? null,
             'password' => $data['password'],
             'status_akun' => 'aktif',
-            'last_login_at' => now(),
+            'last_login_at' => null,
         ]);
 
-        // Login otomatis setelah registrasi berhasil
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return redirect()->route($role . '.dashboard')->with('status', 'Pendaftaran berhasil! Selamat datang, ' . $user->name . '.');
+        return redirect()->route('login', ['role' => $role])
+            ->with('status', 'Pendaftaran berhasil! Akun Anda telah aktif. Silakan masuk menggunakan Email / ' . ($role === 'mahasiswa' ? 'NIM' : 'NIDN') . ' dan kata sandi yang telah Anda daftarkan.');
     }
 
     public function logout(Request $request)

@@ -333,7 +333,7 @@
         .auth-note{
             margin:22px 0 0;
             font-size:13.5px;
-            color:#94A3B8;
+            color:#FFFFFF;
             text-align:center;
             line-height:1.5;
         }
@@ -411,6 +411,16 @@
                     </div>
                 @endif
             @endauth
+
+            @if (session('status'))
+                <div class="flash-message" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); border-left: 4px solid #10B981; color: #6EE7B7; display: flex; align-items: flex-start; gap: 10px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0; margin-top:2px;">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-linecap="round" stroke-linejoin="round"/>
+                        <polyline points="22 4 12 14.01 9 11.01" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>{{ session('status') }}</span>
+                </div>
+            @endif
 
             @if ($errors->any())
                 <div class="error-box">{{ $errors->first() }}</div>

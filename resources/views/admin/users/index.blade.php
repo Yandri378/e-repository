@@ -289,25 +289,25 @@
                             </div>
 
                             {{-- Actions --}}
-                            <div class="flex flex-wrap items-center gap-2.5">
+                            <div class="flex flex-wrap items-center gap-2">
                                 
-                                {{-- Switch Status (Aktif / Nonaktifkan) --}}
+                                {{-- Switch Status (Aktif / Nonaktifkan Sementara) --}}
                                 <form method="POST" action="{{ route('admin.users.status', $user) }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="status_akun" value="{{ $nextStatus }}">
                                     @if ($isActive)
                                         <button type="submit"
-                                            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-rose-500 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
-                                            onclick="return confirm('Nonaktifkan akun {{ $user->name }}? Pengguna tidak akan bisa login sampai diaktifkan kembali.')"
-                                            title="Klik untuk menonaktifkan akun">
-                                            <svg class="h-3.5 w-3.5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                                            <span>Nonaktifkan</span>
+                                            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-amber-500 dark:hover:bg-amber-950/40 dark:hover:text-amber-300"
+                                            onclick="return confirm('Nonaktifkan sementara akun {{ $user->name }}?\n\nPengguna tidak akan bisa login sampai diaktifkan kembali. Data akun tetap tersimpan.')"
+                                            title="Nonaktifkan sementara (data akun tetap tersimpan)">
+                                            <svg class="h-3.5 w-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                            <span>Nonaktifkan Sementara</span>
                                         </button>
                                     @else
                                         <button type="submit"
                                             class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
-                                            title="Klik untuk mengaktifkan kembali akun">
+                                            title="Aktifkan kembali akun ini">
                                             <svg class="h-3.5 w-3.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                             <span>Aktifkan Akun</span>
                                         </button>
@@ -317,20 +317,23 @@
                                 {{-- Ubah Password Button --}}
                                 <button type="button"
                                     onclick="togglePasswordForm('pw-form-{{ $user->id }}')"
-                                    class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 shadow-sm transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/40">
-                                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:bg-blue-950/40 dark:hover:text-blue-300">
+                                    <svg class="h-3.5 w-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                                     </svg>
-                                    <span>Ubah Password</span>
+                                    <span>Ubah Sandi</span>
                                 </button>
 
-                                {{-- Hapus Akun Button --}}
+                                {{-- Hapus Akun Permanen Button --}}
                                 <form method="POST" action="{{ route('admin.users.destroy', $user) }}"
-                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ $user->name }} secara permanen? Data yang berkaitan mungkin akan terpengaruh.')">
+                                    onsubmit="return confirm('PERINGATAN: Hapus akun {{ $user->name }} secara PERMANEN dari database?\n\nSetelah dihapus permanen, email ({{ $user->email }}) dan NIM/NIDN dapat didaftarkan kembali sebagai akun baru.')">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-500 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-rose-950/30" type="submit" title="Hapus akun permanen">
-                                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    <button class="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-100 hover:text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/40"
+                                        type="submit"
+                                        title="Hapus akun permanen agar email dan NIM bisa didaftarkan kembali">
+                                        <svg class="h-3.5 w-3.5 text-rose-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                        <span>Hapus Akun</span>
                                     </button>
                                 </form>
                             </div>
