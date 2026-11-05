@@ -6,6 +6,27 @@
 <div class="min-h-screen bg-gradient-to-b from-blue-50/60 via-white to-white dark:from-slate-950 dark:via-slate-950 dark:to-black">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
+        {{-- Flash Notification --}}
+        @if (session('status') || session('success'))
+            <div id="dosen-flash-alert" class="flex items-start sm:items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-md shadow-emerald-500/10">
+                <div class="flex items-center gap-3.5">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/25">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm sm:text-base text-emerald-950">Data Berhasil Disimpan!</p>
+                        <p class="text-xs sm:text-sm text-emerald-700 mt-0.5">{{ session('success') ?? session('status') }}</p>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('dosen-flash-alert')?.remove()" class="text-emerald-600 hover:text-emerald-900 p-1.5 rounded-lg transition hover:bg-emerald-100/70" aria-label="Tutup">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+        @endif
+
         {{-- Hero Section --}}
         <section class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-700 via-blue-700 to-slate-900 px-6 py-10 sm:px-10 sm:py-12 shadow-2xl shadow-blue-900/20">
             <div class="absolute -top-16 -right-16 w-72 h-72 bg-white/10 rounded-full blur-3xl transition-transform duration-700 group-hover:scale-110"></div>

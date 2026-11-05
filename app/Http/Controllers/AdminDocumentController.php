@@ -76,31 +76,37 @@ class AdminDocumentController extends Controller
     public function create(Request $request)
     {
         $kategori = $request->query('kategori', 'skripsi');
-        if (!in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
+        if (!in_array($kategori, ['skripsi', 'magang', 'penelitian', 'pkm'], true)) {
             $kategori = 'skripsi';
         }
 
         $programStudi = ProgramStudi::where('aktif', true)->orderBy('nama')->get();
         $jenisDokumen = JenisDokumen::where('aktif', true)->orderBy('nama')->get();
+        $dosenPembimbing = \App\Models\User::where('role', 'dosen')
+            ->where('status_akun', 'aktif')
+            ->orderBy('name')
+            ->get();
 
-        return view('admin.documents.create', compact('kategori', 'programStudi', 'jenisDokumen'));
+        return view('admin.documents.create', compact('kategori', 'programStudi', 'jenisDokumen', 'dosenPembimbing'));
     }
 
     public function store(Request $request)
     {
         $kategori = $request->input('kategori', 'skripsi');
-        if (!in_array($kategori, ['skripsi', 'penelitian', 'pkm'], true)) {
+        if (!in_array($kategori, ['skripsi', 'magang', 'penelitian', 'pkm'], true)) {
             $kategori = 'skripsi';
         }
 
         $rules = [
-            'kategori' => ['required', Rule::in(['skripsi', 'penelitian', 'pkm'])],
+            'kategori' => ['required', Rule::in(['skripsi', 'magang', 'penelitian', 'pkm'])],
             'program_studi_id' => ['required', 'exists:program_studi,id'],
             'jenis_dokumen_id' => ['nullable', 'exists:jenis_dokumen,id'],
             'nama' => ['required', 'string', 'max:255'],
             'tahun' => ['required', 'digits:4'],
             'bulan' => ['nullable', 'integer', 'between:1,12'],
             'judul' => ['required', 'string', 'max:255'],
+            'tempat_magang' => ['nullable', 'string', 'max:255'],
+            'dosen_pembimbing_id' => ['nullable', Rule::exists('users', 'id')->where(fn ($q) => $q->where('role', 'dosen')->where('status_akun', 'aktif'))],
             'jumlah_halaman' => ['nullable', 'integer', 'min:1'],
             'abstrak' => ['nullable', 'string'],
             'detail' => ['nullable', 'string'],
@@ -109,7 +115,8 @@ class AdminDocumentController extends Controller
             'file_project' => ['nullable', 'file', 'extensions:zip,rar', 'max:819200'],
         ];
 
-        if ($kategori === 'skripsi') {
+        // magang & skripsi adalah dokumen mahasiswa (pakai NIM), penelitian & pkm pakai NIDN
+        if (in_array($kategori, ['skripsi', 'magang'], true)) {
             $rules['nim'] = ['required', 'string', 'max:30'];
         } else {
             $rules['nidn'] = ['required', 'string', 'max:30'];
@@ -172,6 +179,8 @@ class AdminDocumentController extends Controller
                 'tahun' => $data['tahun'],
                 'bulan' => $data['bulan'] ?? now()->month,
                 'judul' => $data['judul'],
+                'tempat_magang' => $data['tempat_magang'] ?? null,
+                'dosen_pembimbing_id' => $data['dosen_pembimbing_id'] ?? null,
                 'jumlah_halaman' => $data['jumlah_halaman'] ?? null,
                 'abstrak' => $data['abstrak'] ?? null,
                 'detail' => $data['detail'] ?? null,
@@ -188,7 +197,8 @@ class AdminDocumentController extends Controller
 
             return redirect()
                 ->route('admin.documents.index', ['status' => 'terverifikasi'])
-                ->with('status', 'Data ' . strtoupper($kategori) . ' "' . $document->judul . '" berhasil diupload secara manual.');
+                ->with('status', 'Data berhasil disimpan.')
+                ->with('success', 'Data ' . strtoupper($kategori) . ' "' . $document->judul . '" berhasil disimpan.');
         } catch (\Throwable $e) {
             $this->safeLog('error', 'Upload manual admin gagal: ' . $e->getMessage(), ['exception' => $e]);
 

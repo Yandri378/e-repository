@@ -5,6 +5,27 @@
 @section('content')
 <div class="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
 
+    {{-- Flash Notification --}}
+    @if (session('status') || session('success'))
+        <div id="admin-dash-flash-alert" class="flex items-start sm:items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-md shadow-emerald-500/10">
+            <div class="flex items-center gap-3.5">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/25">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-bold text-sm sm:text-base text-emerald-950">Data Berhasil Disimpan!</p>
+                    <p class="text-xs sm:text-sm text-emerald-700 mt-0.5">{{ session('success') ?? session('status') }}</p>
+                </div>
+            </div>
+            <button type="button" onclick="document.getElementById('admin-dash-flash-alert')?.remove()" class="text-emerald-600 hover:text-emerald-900 p-1.5 rounded-lg transition hover:bg-emerald-100/70" aria-label="Tutup">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+    @endif
+
     {{-- ============ HERO ============ --}}
     <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-slate-900 p-8 shadow-xl shadow-blue-900/20 sm:p-10">
         <div class="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>

@@ -49,6 +49,10 @@ class AdminManualUploadTest extends TestCase
         $responsePkm = $this->actingAs($this->admin)->get(route('admin.documents.create', ['kategori' => 'pkm']));
         $responsePkm->assertStatus(200);
         $responsePkm->assertSee('PKM Dosen');
+
+        $responseMagang = $this->actingAs($this->admin)->get(route('admin.documents.create', ['kategori' => 'magang']));
+        $responseMagang->assertStatus(200);
+        $responseMagang->assertSee('Magang Mahasiswa');
     }
 
     public function test_non_admin_cannot_access_manual_upload_page(): void
@@ -91,6 +95,40 @@ class AdminManualUploadTest extends TestCase
         $document = RepositoryDocument::where('nim', '2010115261')->firstOrFail();
         $this->assertEquals('skripsi', $document->kategori);
         $this->assertEquals('Budi Mahasiswa', $document->nama);
+        $this->assertEquals('terverifikasi', $document->status);
+        $this->assertNotNull($document->file_dokumen);
+        $this->assertNotNull($document->file_project);
+
+        Storage::disk('local')->assertExists($document->file_dokumen);
+        Storage::disk('local')->assertExists($document->file_project);
+    }
+
+    public function test_admin_can_manually_upload_magang_mahasiswa_with_pdf_and_project_zip(): void
+    {
+        $pdfFile = UploadedFile::fake()->create('laporan_magang.pdf', 200, 'application/pdf');
+        $zipFile = UploadedFile::fake()->create('project_magang.zip', 500, 'application/zip');
+
+        $response = $this->actingAs($this->admin)->post(route('admin.documents.store'), [
+            'kategori' => 'magang',
+            'nama' => 'Budi Magang',
+            'nim' => '2010115299',
+            'program_studi_id' => $this->prodi->id,
+            'tahun' => '2026',
+            'bulan' => '8',
+            'judul' => 'Laporan Praktik Kerja Lapangan di PT ABC',
+            'tempat_magang' => 'PT ABC Multi Industri',
+            'abstrak' => 'Abstrak laporan magang.',
+            'status_penelitian' => 'selesai',
+            'file_dokumen' => $pdfFile,
+            'file_project' => $zipFile,
+        ]);
+
+        $response->assertRedirect(route('admin.documents.index', ['status' => 'terverifikasi']));
+
+        $document = RepositoryDocument::where('nim', '2010115299')->firstOrFail();
+        $this->assertEquals('magang', $document->kategori);
+        $this->assertEquals('Budi Magang', $document->nama);
+        $this->assertEquals('PT ABC Multi Industri', $document->tempat_magang);
         $this->assertEquals('terverifikasi', $document->status);
         $this->assertNotNull($document->file_dokumen);
         $this->assertNotNull($document->file_project);

@@ -178,9 +178,9 @@
         </aside>
 
         <main class="admin-main">
-            @if (session('status'))
+            @if (session('status') || session('success'))
                 <div class="flash-message admin-flash">
-                    <span>{{ session('status') }}</span>
+                    <span>{{ session('success') ?? session('status') }}</span>
                 </div>
             @endif
 

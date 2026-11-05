@@ -486,7 +486,12 @@
 
                     xhr.onload = function () {
                         if (xhr.status >= 200 && xhr.status < 300) {
-                            window.location.href = xhr.responseURL || window.location.href;
+                            if (progressBar) progressBar.style.width = '100%';
+                            if (progressText) progressText.textContent = '100% - Data berhasil disimpan!';
+                            if (submitBtn) submitBtn.innerText = 'Data Berhasil Disimpan!';
+                            setTimeout(function () {
+                                window.location.href = xhr.responseURL || window.location.href;
+                            }, 300);
                             return;
                         }
                         showUploadError(uploadErrorMessage(xhr));

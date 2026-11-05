@@ -1835,9 +1835,9 @@
     </aside>
 
     {{-- ===================== FLASH ===================== --}}
-    @if (session('status'))
+    @if (session('status') || session('success'))
         <div class="flash-message" id="flash-message">
-            <span>{{ session('status') }}</span>
+            <span>{{ session('success') ?? session('status') }}</span>
             <div style="display:flex; align-items:center; gap:10px;">
                 @if (session('whatsapp_notification_url'))
                     <a class="btn primary" href="{{ session('whatsapp_notification_url') }}" target="_blank" rel="noopener">

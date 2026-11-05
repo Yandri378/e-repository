@@ -4,23 +4,23 @@
 
 @section('content')
     <div class="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white">
-        <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 space-y-8">
+        <div class="mx-auto max-w-4xl px-3 py-5 sm:px-6 sm:py-10 lg:px-8 space-y-6 sm:space-y-8">
 
             {{-- ============ HERO ============ --}}
             <section
-                class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 px-7 py-9 shadow-xl shadow-blue-900/20 sm:px-10 sm:py-11">
+                class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 px-5 py-6 sm:px-10 sm:py-10 shadow-xl shadow-blue-900/20">
                 <div class="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl">
                 </div>
                 <div
                     class="pointer-events-none absolute -bottom-20 left-10 h-48 w-48 rounded-full bg-indigo-300/20 blur-3xl">
                 </div>
 
-                <div class="relative flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-4">
+                <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex items-start sm:items-center gap-3.5 sm:gap-4">
                         <div
-                            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/30 backdrop-blur-sm">
-                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
+                            class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/30 backdrop-blur-sm">
+                            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="sm:w-7 sm:h-7">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="17 8 12 3 7 8" />
                                 <line x1="12" y1="3" x2="12" y2="15" />
@@ -29,14 +29,14 @@
                         <div>
                             <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-100">Admin · Upload Manual
                             </p>
-                            <h1 class="mt-1 text-xl font-bold text-white sm:text-2xl md:text-3xl">Upload Manual Dokumen</h1>
-                            <p class="mt-1 text-sm text-blue-100/80">Input data Skripsi Mahasiswa, Penelitian Dosen, atau
+                            <h1 class="mt-0.5 text-lg font-bold text-white sm:text-2xl md:text-3xl">Upload Manual Dokumen</h1>
+                            <p class="mt-1 text-xs sm:text-sm text-blue-100/80">Input data Skripsi Mahasiswa, Magang Mahasiswa, Penelitian Dosen, atau
                                 PKM Dosen secara manual beserta file PDF & Project.</p>
                         </div>
                     </div>
                     <a href="{{ route('admin.documents.index') }}"
-                        class="hidden sm:inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-xs font-bold text-white backdrop-blur-sm ring-1 ring-white/30 transition hover:bg-white/25">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        class="inline-flex self-start sm:self-auto items-center gap-2 rounded-xl bg-white/15 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-sm ring-1 ring-white/30 transition hover:bg-white/25 sm:px-4 sm:py-2.5">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 12H5M12 19l-7-7 7-7" />
                         </svg>
                         Kembali
@@ -81,43 +81,53 @@
             @endif
 
             {{-- ============ KATEGORI TABS ============ --}}
-            <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-2 shadow-sm">
+            <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap items-center rounded-2xl border border-slate-200 bg-slate-50/80 p-2 shadow-sm">
                 <a href="{{ route('admin.documents.create', ['kategori' => 'skripsi']) }}"
-                    class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition-all sm:text-sm {{ $kategori === 'skripsi' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600' : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-blue-700 border border-slate-200' }}">
+                    class="flex-1 min-w-0 sm:min-w-[130px] inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-bold transition-all sm:text-sm {{ $kategori === 'skripsi' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600' : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-blue-700 border border-slate-200' }}">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
                         <path d="M6 12v5c3 3 9 3 12 0v-5" />
                     </svg>
-                    <span>Skripsi Mahasiswa</span>
+                    <span>Skripsi</span>
+                </a>
+
+                <a href="{{ route('admin.documents.create', ['kategori' => 'magang']) }}"
+                    class="flex-1 min-w-0 sm:min-w-[130px] inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-bold transition-all sm:text-sm {{ $kategori === 'magang' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/25 ring-2 ring-emerald-600' : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-emerald-700 border border-slate-200' }}">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" />
+                        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </svg>
+                    <span>Magang</span>
                 </a>
 
                 <a href="{{ route('admin.documents.create', ['kategori' => 'penelitian']) }}"
-                    class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition-all sm:text-sm {{ $kategori === 'penelitian' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600' : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-blue-700 border border-slate-200' }}">
+                    class="flex-1 min-w-0 sm:min-w-[130px] inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-bold transition-all sm:text-sm {{ $kategori === 'penelitian' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600' : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-blue-700 border border-slate-200' }}">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                     </svg>
-                    <span>Penelitian Dosen</span>
+                    <span>Penelitian</span>
                 </a>
 
                 <a href="{{ route('admin.documents.create', ['kategori' => 'pkm']) }}"
-                    class="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition-all sm:text-sm {{ $kategori === 'pkm' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600' : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-blue-700 border border-slate-200' }}">
+                    class="flex-1 min-w-0 sm:min-w-[130px] inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-bold transition-all sm:text-sm {{ $kategori === 'pkm' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-600' : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-blue-700 border border-slate-200' }}">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                         <circle cx="8.5" cy="7" r="4" />
                         <polyline points="17 11 19 13 23 9" />
                     </svg>
-                    <span>PKM Dosen</span>
+                    <span>PKM</span>
                 </a>
             </div>
 
             {{-- ============ FORM MANUAL UPLOAD ============ --}}
             <form id="adminUploadForm" method="POST" action="{{ route('admin.documents.store') }}"
                 enctype="multipart/form-data"
-                class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 space-y-6">
+                class="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-8 shadow-sm space-y-6">
                 @csrf
                 <input type="hidden" name="kategori" value="{{ $kategori }}">
 
@@ -143,7 +153,7 @@
                     </div>
 
                     {{-- NIM / NIDN --}}
-                    @if ($kategori === 'skripsi')
+                    @if (in_array($kategori, ['skripsi', 'magang'], true))
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                                 NIM <span class="text-red-500">*</span>
@@ -278,13 +288,57 @@
                         class="w-full rounded-xl border border-slate-300 p-4 text-sm font-medium text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">{{ old('abstrak') }}</textarea>
                 </div>
 
-                @if ($kategori !== 'skripsi')
-                    {{-- Detail Tambahan untuk Penelitian / PKM --}}
+                @if ($kategori === 'magang')
+                    {{-- Tempat Magang --}}
                     <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                            Tempat Magang / Perusahaan
+                        </label>
+                        <input type="text" name="tempat_magang" value="{{ old('tempat_magang') }}"
+                            placeholder="Contoh: PT ABC Indonesia"
+                            class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                    </div>
+                @endif
+
+                @if (in_array($kategori, ['skripsi', 'magang'], true))
+                    {{-- Dosen Pembimbing --}}
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                            Dosen Pembimbing
+                        </label>
+                        @php
+                            $selectedDosen = null;
+                            if (old('dosen_pembimbing_id')) {
+                                $selectedDosen = collect($dosenPembimbing ?? [])->firstWhere('id', old('dosen_pembimbing_id'));
+                            }
+                        @endphp
+                        <input type="text" id="admin_dosen_search" list="admin-dosen-list"
+                            placeholder="Ketik nama dosen pembimbing..."
+                            autocomplete="off"
+                            value="{{ $selectedDosen ? $selectedDosen->name . ($selectedDosen->nidn ? ' - ' . $selectedDosen->nidn : '') : '' }}"
+                            class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                        <datalist id="admin-dosen-list">
+                            @foreach ($dosenPembimbing ?? [] as $dosen)
+                                <option value="{{ $dosen->name }}{{ $dosen->nidn ? ' - ' . $dosen->nidn : '' }}"
+                                    data-id="{{ $dosen->id }}" data-name="{{ $dosen->name }}" data-nidn="{{ $dosen->nidn }}">
+                                </option>
+                            @endforeach
+                        </datalist>
+                        <input type="hidden" name="dosen_pembimbing_id" id="admin_dosen_pembimbing_id"
+                            value="{{ old('dosen_pembimbing_id') }}">
+                        @if (empty($dosenPembimbing) || count($dosenPembimbing) === 0)
+                            <small class="mt-1 block text-xs text-amber-600">* Belum ada dosen aktif terdaftar di sistem.</small>
+                        @endif
+                    </div>
+                @endif
+
+                @if ($kategori !== 'skripsi')
+                    {{-- Detail Tambahan untuk Penelitian / PKM / Magang --}}
+                    <div class="sm:col-span-2">
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                             Detail / Keterangan Tambahan
                         </label>
-                        <textarea name="detail" rows="3" placeholder="Tuliskan informasi detail penelitian/PKM jika ada..."
+                        <textarea name="detail" rows="3" placeholder="Tuliskan informasi detail jika ada..."
                             class="w-full rounded-xl border border-slate-300 p-4 text-sm font-medium text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">{{ old('detail') }}</textarea>
                     </div>
                 @endif
@@ -354,13 +408,13 @@
                 </div>
 
                 {{-- Submit --}}
-                <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-6">
+                <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100 pt-6">
                     <a href="{{ route('admin.documents.index') }}"
-                        class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 text-center">
                         Batal
                     </a>
                     <button type="submit" id="adminSubmitBtn"
-                        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.01]">
+                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 sm:py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.01]">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
@@ -413,6 +467,40 @@
             const overlayInfo = document.getElementById('upload-overlay-info');
 
             if (!form) return;
+
+            // ── Dosen Pembimbing Autocomplete ──
+            const dosenSearch = document.getElementById('admin_dosen_search');
+            const dosenHidden = document.getElementById('admin_dosen_pembimbing_id');
+            const dosenList = document.getElementById('admin-dosen-list');
+
+            function findDosen(val) {
+                val = val.trim().toLowerCase();
+                if (!val || !dosenList) return null;
+                const opts = dosenList.options;
+                for (let i = 0; i < opts.length; i++) {
+                    const optVal = opts[i].value.trim().toLowerCase();
+                    const optName = (opts[i].getAttribute('data-name') || '').trim().toLowerCase();
+                    if (optVal === val || optName === val) return { id: opts[i].getAttribute('data-id'), fullText: opts[i].value };
+                }
+                for (let i = 0; i < opts.length; i++) {
+                    const optVal = opts[i].value.trim().toLowerCase();
+                    const optName = (opts[i].getAttribute('data-name') || '').trim().toLowerCase();
+                    if (optVal.includes(val) || optName.includes(val)) return { id: opts[i].getAttribute('data-id'), fullText: opts[i].value };
+                }
+                return null;
+            }
+
+            if (dosenSearch && dosenHidden) {
+                dosenSearch.addEventListener('input', function () {
+                    const m = findDosen(this.value);
+                    dosenHidden.value = m ? m.id : '';
+                });
+                dosenSearch.addEventListener('change', function () {
+                    const m = findDosen(this.value);
+                    if (m) { this.value = m.fullText; dosenHidden.value = m.id; }
+                    else if (!this.value.trim()) dosenHidden.value = '';
+                });
+            }
 
             form.addEventListener('submit', function (e) {
                 const maxDocSize = 10 * 1024 * 1024;  // 10 MB
@@ -480,7 +568,13 @@
 
                 xhr.onload = function () {
                     if (xhr.status >= 200 && xhr.status < 300) {
-                        window.location.href = xhr.responseURL || form.action;
+                        if (overlayInfo) overlayInfo.textContent = 'Upload berhasil! Data berhasil disimpan...';
+                        if (progressBar) progressBar.style.width = '100%';
+                        if (progressLabel) progressLabel.textContent = '100%';
+                        if (submitText) submitText.textContent = 'Data Berhasil Disimpan!';
+                        setTimeout(function () {
+                            window.location.href = xhr.responseURL || form.action;
+                        }, 300);
                         return;
                     }
                     handleUploadError(uploadErrorMessage(xhr));

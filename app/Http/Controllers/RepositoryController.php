@@ -169,7 +169,8 @@ class RepositoryController extends Controller
 
         return redirect()
             ->route($user->role.'.dashboard')
-            ->with('status', 'Data berhasil disimpan.');
+            ->with('status', 'Data berhasil disimpan.')
+            ->with('success', 'Data ' . strtoupper($kategori) . ' berhasil disimpan dan sedang menunggu verifikasi.');
     }
 
     public function download(RepositoryDocument $document)

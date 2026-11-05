@@ -3,6 +3,18 @@
 @section('title', 'Detail Submission')
 
 @section('content')
+@if (session('status') || session('success'))
+    <div style="max-width: 960px; margin: 1.5rem auto 0; padding: 1rem 1.25rem; border-radius: 1rem; background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <div>
+            <strong style="display: block; font-size: 0.95rem; color: #064e3b;">Data Berhasil Disimpan!</strong>
+            <span style="font-size: 0.85rem; color: #047857;">{{ session('success') ?? session('status') }}</span>
+        </div>
+    </div>
+@endif
 <section class="page-hero compact reveal">
     <p class="eyebrow">{{ auth()->user()?->role === 'admin' ? 'Preview Data' : 'Bukti Submission' }}</p>
     <h1>{{ $document->judul }}</h1>
