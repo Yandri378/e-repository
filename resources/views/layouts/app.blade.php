@@ -1334,6 +1334,17 @@
                 min-height: 36px !important;
             }
         }
+
+        /* ===== HIDE GUEST LOGIN BUTTONS IN HEADER ON MOBILE =====
+           Buttons (Daftar & Masuk) already exist inside the mobile
+           drawer, so we hide them from the top navbar on small
+           screens to prevent overflow / content clipping on iPhone.
+           ========================================================= */
+        @media (max-width: 980px) {
+            .guest-header-btns {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -1609,7 +1620,7 @@
                     </div>
                 </div>
             @else
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="guest-header-btns" style="display: flex; align-items: center; gap: 8px;">
                     <a href="{{ route('register') }}" class="nav-login-btn" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: #38BDF8;">
                         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
