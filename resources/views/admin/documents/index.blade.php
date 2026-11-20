@@ -401,7 +401,7 @@
                                 <input type="hidden" name="status" value="terverifikasi">
                                 <button type="submit" class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-600/30 transition-all duration-200 hover:scale-105 hover:shadow-md sm:w-auto">
                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-                                    Terverifikasi
+                                    Verifikasi
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('admin.documents.status', $document) }}" class="flex-1 sm:flex-none">

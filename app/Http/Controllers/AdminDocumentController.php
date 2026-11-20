@@ -625,6 +625,9 @@ class AdminDocumentController extends Controller
         }
 
         $document->update([
+            'status' => 'terverifikasi',
+            'verified_by' => $document->verified_by ?? Auth::id(),
+            'verified_at' => $document->verified_at ?? now(),
             'bebas_pustaka_diizinkan' => true,
             'bebas_pustaka_diizinkan_by' => Auth::id(),
             'bebas_pustaka_diizinkan_at' => now(),

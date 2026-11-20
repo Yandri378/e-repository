@@ -64,7 +64,10 @@ class PublicController extends Controller
                         ->orWhere('tempat_magang', 'like', $keyword)
                         ->orWhere('tahun', 'like', $keyword)
                         ->orWhere('file_dokumen', 'like', $keyword)
-                        ->orWhere('file_project', 'like', $keyword);
+                        ->orWhere('file_project', 'like', $keyword)
+                        ->orWhereHas('programStudi', function ($q) use ($keyword) {
+                            $q->where('nama', 'like', $keyword);
+                        });
                 });
             })
             ->when($search !== '', function ($query) use ($search, $isSingleLetterSearch, $sort) {
@@ -112,9 +115,9 @@ class PublicController extends Controller
 
     public function showDocument(RepositoryDocument $document)
     {
-        // Allow owners to preview their own uploads even if not yet verified
+        // Allow public to preview documents unless explicitly rejected
         $isOwner = auth()->check() && auth()->id() === $document->user_id;
-        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip'], true), 404);
+        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip', 'pending'], true), 404);
         abort_if(! $document->file_dokumen, 404, 'File dokumen belum tersedia.');
         // check storage presence in private/public
         if (Storage::disk('local')->exists($document->file_dokumen) || Storage::disk('public')->exists($document->file_dokumen)) {
@@ -139,9 +142,9 @@ class PublicController extends Controller
 
     public function streamDocument(RepositoryDocument $document)
     {
-        // Allow owner to stream own upload regardless of verification
+        // Allow owner to stream own upload regardless of verification, public allowed if not rejected
         $isOwner = auth()->check() && auth()->id() === $document->user_id;
-        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip'], true), 404);
+        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip', 'pending'], true), 404);
         abort_if(! $document->file_dokumen, 404, 'File dokumen belum tersedia.');
 
         // Prefer private storage for uploaded documents
@@ -186,7 +189,7 @@ class PublicController extends Controller
     {
         // Similar access rules as showDocument
         $isOwner = auth()->check() && auth()->id() === $document->user_id;
-        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip'], true), 404);
+        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip', 'pending'], true), 404);
 
         if (! (Storage::disk('local')->exists($document->file_dokumen) || Storage::disk('public')->exists($document->file_dokumen))) {
             abort(404, 'File dokumen tidak ditemukan.');
@@ -279,9 +282,9 @@ class PublicController extends Controller
             abort(403, 'Tanda tangan URL tidak valid atau sudah kadaluarsa.');
         }
 
-        // Use same rules as streamDocument (owner always allowed, otherwise must be verified/arsip)
+        // Use same rules as streamDocument (owner always allowed, otherwise must not be ditolak)
         $isOwner = auth()->check() && auth()->id() === $document->user_id;
-        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip'], true), 404);
+        abort_if(! $isOwner && ! in_array($document->status, ['terverifikasi', 'arsip', 'pending'], true), 404);
         abort_if(! $document->file_dokumen, 404, 'File dokumen belum tersedia.');
 
         if (Storage::disk('local')->exists($document->file_dokumen)) {
@@ -369,7 +372,7 @@ class PublicController extends Controller
 
     private function publicDocuments()
     {
-        return RepositoryDocument::whereIn('status', ['terverifikasi', 'arsip'])
+        return RepositoryDocument::whereIn('status', ['terverifikasi', 'arsip', 'pending'])
             ->where(function ($query) {
                 $query->whereNull('file_dokumen')
                     ->orWhere('file_dokumen', '')

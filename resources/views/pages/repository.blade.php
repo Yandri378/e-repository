@@ -139,9 +139,19 @@
                                 <span class="rounded-full border px-2.5 py-0.5 font-bold uppercase tracking-wider {{ $badgeStyle }}">
                                     {{ strtoupper($document->kategori) }}
                                 </span>
-                                <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 font-semibold text-emerald-700 border border-emerald-100">
-                                    Terverifikasi
-                                </span>
+                                @if ($document->status === 'terverifikasi')
+                                    <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 font-semibold text-emerald-700 border border-emerald-100">
+                                        Terverifikasi
+                                    </span>
+                                @elseif ($document->status === 'pending')
+                                    <span class="rounded-full bg-amber-50 px-2.5 py-0.5 font-semibold text-amber-700 border border-amber-200">
+                                        Menunggu Verifikasi
+                                    </span>
+                                @elseif ($document->status === 'arsip')
+                                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 font-semibold text-slate-700 border border-slate-200">
+                                        Arsip
+                                    </span>
+                                @endif
                                 @if($document->jenis_input === 'admin_import')
                                     <span class="rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-700 border border-amber-100">
                                         Data Import Admin

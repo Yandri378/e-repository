@@ -87,11 +87,17 @@ class RepositoryController extends Controller
         ]);
 
         try {
+            $isAdmin = $user->role === 'admin';
+
             if ($request->hasFile('file_dokumen')) {
                 $uploadedPdf = $request->file('file_dokumen');
                 $data['file_dokumen'] = $this->storeUploadedFile($uploadedPdf, 'repository-documents');
                 $data['jenis_input'] = 'upload';
-                $data['status'] = 'pending';
+                $data['status'] = $isAdmin ? 'terverifikasi' : 'pending';
+                if ($isAdmin) {
+                    $data['verified_by'] = Auth::id();
+                    $data['verified_at'] = now();
+                }
 
                 // Save PDF page count (best-effort binary scan server-side)
                 $data['pdf_page_count'] = $this->countPdfPages($uploadedPdf->getRealPath());
@@ -131,7 +137,9 @@ class RepositoryController extends Controller
                 'input_by' => Auth::id(),
                 'bulan' => $data['bulan'] ?? now()->month,
                 'tanggal_upload' => now(),
-                'status' => $data['status'] ?? 'pending',
+                'status' => $data['status'] ?? ($isAdmin ? 'terverifikasi' : 'pending'),
+                'verified_by' => $data['verified_by'] ?? ($isAdmin ? Auth::id() : null),
+                'verified_at' => $data['verified_at'] ?? ($isAdmin ? now() : null),
                 'submission_token' => $user->role === 'admin' ? Str::random(48) : null,
             ]));
         } catch (ValidationException $exception) {
@@ -400,7 +408,7 @@ class RepositoryController extends Controller
         return $user->role === 'admin'
             || $document->user_id === $user->id
             || $document->dosen_pembimbing_id === $user->id
-            || in_array($document->status, ['terverifikasi', 'arsip'], true);
+            || in_array($document->status, ['terverifikasi', 'arsip', 'pending'], true);
     }
 
     private function storeUploadedFile(UploadedFile $uploadedFile, string $directory): string
