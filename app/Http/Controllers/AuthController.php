@@ -92,65 +92,70 @@ class AuthController extends Controller
 
     public function showRegister(?string $role = null)
     {
-        abort_if($role && !in_array($role, ['mahasiswa', 'dosen'], true), 404);
+        if ($role === 'dosen') {
+            return redirect()->route('login.dosen')
+                ->withErrors(['login' => 'Pendaftaran akun Dosen dilakukan langsung oleh Administrator. Silakan hubungi admin untuk pembuatan akun.']);
+        }
+
+        abort_if($role && $role !== 'mahasiswa', 404);
 
         $programStudi = ProgramStudi::where('aktif', true)->orderBy('nama')->get();
 
-        return view('auth.register', compact('role', 'programStudi'));
+        return view('auth.register', ['role' => 'mahasiswa', 'programStudi' => $programStudi]);
     }
 
     public function register(Request $request)
     {
-        $role = $request->validate([
-            'role' => ['required', Rule::in(['mahasiswa', 'dosen'])],
-        ], [
-            'role.required' => 'Pilih peran akun (Mahasiswa atau Dosen).',
-            'role.in' => 'Peran akun tidak valid.',
-        ])['role'];
+        // Pendaftaran mandiri hanya khusus untuk Mahasiswa. Akun dosen hanya dibuat oleh Admin.
+        if ($request->input('role') === 'dosen') {
+            return redirect()->route('login.dosen')
+                ->withErrors(['login' => 'Pendaftaran mandiri akun Dosen dinonaktifkan. Akun Dosen dibuatkan langsung oleh Administrator.']);
+        }
 
-        $identityField = $role === 'mahasiswa' ? 'nim' : 'nidn';
+        $request->merge(['role' => 'mahasiswa']);
+
         $emailInput = trim((string) $request->input('email', ''));
-        $identityInput = trim((string) $request->input($identityField, ''));
+        $nimInput = trim((string) $request->input('nim', ''));
 
-        // Jika sebelumnya ada akun yang 'ditolak' dengan email atau NIM/NIDN yang sama,
+        // Jika sebelumnya ada akun yang 'ditolak' dengan email atau NIM yang sama,
         // bersihkan data yang ditolak agar pengguna bisa mendaftar ulang secara bersih.
         User::where('status_akun', 'ditolak')
-            ->where(function ($q) use ($emailInput, $identityField, $identityInput) {
+            ->where(function ($q) use ($emailInput, $nimInput) {
                 if ($emailInput !== '') {
                     $q->where('email', $emailInput);
                 }
-                if ($identityInput !== '') {
-                    $q->orWhere($identityField, $identityInput);
+                if ($nimInput !== '') {
+                    $q->orWhere('nim', $nimInput);
                 }
             })
             ->delete();
 
         // Cek jika akun masih ada tapi berstatus 'nonaktif' (dinonaktifkan sementara oleh admin, bukan dihapus)
         $inactiveAccount = User::where('status_akun', 'nonaktif')
-            ->where(function ($q) use ($emailInput, $identityField, $identityInput) {
+            ->where(function ($q) use ($emailInput, $nimInput) {
                 if ($emailInput !== '') {
                     $q->where('email', $emailInput);
                 }
-                if ($identityInput !== '') {
-                    $q->orWhere($identityField, $identityInput);
+                if ($nimInput !== '') {
+                    $q->orWhere('nim', $nimInput);
                 }
             })
             ->first();
 
         if ($inactiveAccount) {
             return back()->withInput()->withErrors([
-                'email' => 'Akun dengan email atau ' . strtoupper($identityField) . ' ini masih tersimpan dengan status NONAKTIF oleh Admin (bukan dihapus permanen). Silakan hubungi Admin untuk mengaktifkan kembali akun Anda atau meminta Admin menghapus akun secara permanen agar dapat didaftarkan ulang.',
+                'email' => 'Akun dengan email atau NIM ini masih tersimpan dengan status NONAKTIF oleh Admin (bukan dihapus permanen). Silakan hubungi Admin untuk mengaktifkan kembali akun Anda.',
             ]);
         }
 
         $rules = [
-            'role' => ['required', Rule::in(['mahasiswa', 'dosen'])],
+            'role' => ['required', Rule::in(['mahasiswa'])],
             'name' => ['required', 'string', 'max:255'],
             'program_studi_id' => ['required', 'exists:program_studi,id'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'whatsapp' => ['nullable', 'string', 'max:25'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            $identityField => ['required', 'string', 'max:30', 'unique:users,'.$identityField],
+            'nim' => ['required', 'string', 'max:30', 'unique:users,nim'],
         ];
 
         $messages = [
@@ -162,8 +167,6 @@ class AuthController extends Controller
             'email.unique' => 'Alamat email ini sudah terdaftar pada akun aktif. Silakan masuk ke akun Anda atau gunakan email lain.',
             'nim.required' => 'NIM Mahasiswa wajib diisi.',
             'nim.unique' => 'NIM ini sudah terdaftar pada akun aktif.',
-            'nidn.required' => 'NIDN Dosen wajib diisi.',
-            'nidn.unique' => 'NIDN ini sudah terdaftar pada akun aktif.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
@@ -174,9 +177,9 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'nim' => $role === 'mahasiswa' ? $data['nim'] : null,
-            'nidn' => $role === 'dosen' ? $data['nidn'] : null,
-            'role' => $role,
+            'nim' => $data['nim'],
+            'nidn' => null,
+            'role' => 'mahasiswa',
             'program_studi_id' => $data['program_studi_id'],
             'whatsapp' => $data['whatsapp'] ?? null,
             'password' => $data['password'],
@@ -184,8 +187,8 @@ class AuthController extends Controller
             'last_login_at' => null,
         ]);
 
-        return redirect()->route('login', ['role' => $role])
-            ->with('status', 'Pendaftaran berhasil! Akun Anda telah aktif. Silakan masuk menggunakan Email / ' . ($role === 'mahasiswa' ? 'NIM' : 'NIDN') . ' dan kata sandi yang telah Anda daftarkan.');
+        return redirect()->route('login', ['role' => 'mahasiswa'])
+            ->with('status', 'Pendaftaran berhasil! Akun Mahasiswa Anda telah aktif. Silakan masuk menggunakan Email atau NIM dan kata sandi yang telah Anda daftarkan.');
     }
 
     public function logout(Request $request)

@@ -731,7 +731,11 @@
             </button>
 
             <p class="auth-note">
-                Belum punya akun? <a href="{{ route('register') }}">Daftar Akun Sekarang</a>
+                @if (($targetRole ?? '') === 'dosen')
+                    Akun Dosen dibuatkan langsung oleh Administrator. Hubungi admin jika belum memiliki akun.
+                @else
+                    Belum punya akun? <a href="{{ route('register') }}">Daftar Akun Mahasiswa</a>
+                @endif
             </p>
         </form>
     </div>

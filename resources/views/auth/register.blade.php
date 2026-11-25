@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Daftar Akun Mahasiswa & Dosen')
+@section('title', 'Daftar Akun Mahasiswa')
 
 @section('content')
 <style>
@@ -33,7 +33,7 @@
 
     .register-header {
         text-align: center;
-        margin-bottom: 26px;
+        margin-bottom: 24px;
     }
 
     .register-eyebrow {
@@ -69,51 +69,22 @@
         margin: 0 auto;
     }
 
-    /* Role Tabs */
-    .role-tabs-wrap {
-        margin-bottom: 22px;
-    }
-
-    .role-tabs-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 700;
-        color: #E2E8F0;
-        margin-bottom: 8px;
-        letter-spacing: 0.04em;
-    }
-
-    .role-tabs {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        background: rgba(30, 41, 59, 0.7);
-        padding: 5px;
+    .dosen-info-box {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(56, 189, 248, 0.2);
         border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .role-tab {
+        padding: 12px 16px;
+        margin-bottom: 22px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 11px 16px;
-        min-height: 46px;
-        border-radius: 9px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 700;
-        transition: all 0.2s ease;
-        margin: 0;
-        user-select: none;
+        gap: 10px;
+        font-size: 13px;
         color: #94A3B8;
+        line-height: 1.45;
     }
 
-    .role-tab.active {
-        background: linear-gradient(135deg, #0284c7, #2563eb);
-        color: #FFFFFF;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+    .dosen-info-box strong {
+        color: #38BDF8;
     }
 
     /* Form Fields Grid */
@@ -308,12 +279,6 @@
             padding: 12px 14px;
         }
 
-        .role-tab {
-            padding: 10px 12px;
-            font-size: 13.5px;
-            min-height: 44px;
-        }
-
         .reg-submit-btn {
             min-height: 48px;
             font-size: 15px;
@@ -332,17 +297,6 @@
             border-radius: 14px;
         }
 
-        .role-tab {
-            font-size: 12.5px;
-            gap: 5px;
-            padding: 8px 10px;
-        }
-
-        .role-tab svg {
-            width: 16px;
-            height: 16px;
-        }
-
         .register-title {
             font-size: 18px;
         }
@@ -354,9 +308,19 @@
 
         {{-- Header --}}
         <div class="register-header">
-            <span class="register-eyebrow">Pendaftaran Mandiri</span>
-            <h1 class="register-title">Buat Akun Repositori</h1>
-            <p class="register-subtitle">Lengkapi formulir di bawah untuk mendaftar sebagai Mahasiswa atau Dosen Universitas Metamedia.</p>
+            <span class="register-eyebrow">Pendaftaran Mahasiswa</span>
+            <h1 class="register-title">Buat Akun Mahasiswa</h1>
+            <p class="register-subtitle">Lengkapi formulir di bawah untuk mendaftar akun Mahasiswa Universitas Metamedia.</p>
+        </div>
+
+        {{-- Info Box Dosen --}}
+        <div class="dosen-info-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span><strong>Informasi untuk Dosen:</strong> Pendaftaran akun Dosen dilakukan langsung oleh Administrator Perpustakaan. Dosen tidak perlu mendaftar mandiri.</span>
         </div>
 
         {{-- Error Alert --}}
@@ -373,51 +337,20 @@
 
         <form method="POST" action="{{ route('register.store') }}" id="register-form">
             @csrf
-            @php
-                $selectedRole = old('role', $role ?? 'mahasiswa');
-            @endphp
-
-            {{-- Role Selector Tabs --}}
-            <div class="role-tabs-wrap">
-                <label class="role-tabs-label">Daftar Sebagai:</label>
-                <div class="role-tabs">
-                    <label id="tab-mahasiswa" class="role-tab {{ $selectedRole === 'mahasiswa' ? 'active' : '' }}">
-                        <input type="radio" name="role" value="mahasiswa" id="role-mahasiswa" style="display: none;" {{ $selectedRole === 'mahasiswa' ? 'checked' : '' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                        </svg>
-                        <span>Mahasiswa</span>
-                    </label>
-                    <label id="tab-dosen" class="role-tab {{ $selectedRole === 'dosen' ? 'active' : '' }}">
-                        <input type="radio" name="role" value="dosen" id="role-dosen" style="display: none;" {{ $selectedRole === 'dosen' ? 'checked' : '' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-                            <path d="M6 6h10M6 10h10"/>
-                        </svg>
-                        <span>Dosen</span>
-                    </label>
-                </div>
-            </div>
+            <input type="hidden" name="role" value="mahasiswa">
 
             {{-- Form Grid --}}
             <div class="register-grid">
                 {{-- Nama Lengkap --}}
                 <div class="form-item col-span-2">
-                    <label for="name-field">Nama Lengkap (dengan Gelar jika Dosen) <span class="req">*</span></label>
-                    <input type="text" id="name-field" name="name" value="{{ old('name') }}" placeholder="Contoh: Budi Santoso, S.Kom." required autocomplete="name" class="reg-input">
+                    <label for="name-field">Nama Lengkap <span class="req">*</span></label>
+                    <input type="text" id="name-field" name="name" value="{{ old('name') }}" placeholder="Contoh: Budi Santoso" required autocomplete="name" class="reg-input">
                 </div>
 
-                {{-- NIM Container (Mahasiswa) --}}
-                <div id="nim-box" class="form-item col-span-1" style="display: {{ $selectedRole === 'mahasiswa' ? 'flex' : 'none' }};">
+                {{-- NIM Mahasiswa --}}
+                <div class="form-item col-span-1">
                     <label for="nim-field">NIM (Nomor Induk Mahasiswa) <span class="req">*</span></label>
-                    <input type="text" id="nim-field" name="nim" value="{{ old('nim') }}" placeholder="Contoh: 202201001" {{ $selectedRole === 'mahasiswa' ? 'required' : '' }} class="reg-input">
-                </div>
-
-                {{-- NIDN Container (Dosen) --}}
-                <div id="nidn-box" class="form-item col-span-1" style="display: {{ $selectedRole === 'dosen' ? 'flex' : 'none' }};">
-                    <label for="nidn-field">NIDN (Nomor Induk Dosen Nasional) <span class="req">*</span></label>
-                    <input type="text" id="nidn-field" name="nidn" value="{{ old('nidn') }}" placeholder="Contoh: 0012345678" {{ $selectedRole === 'dosen' ? 'required' : '' }} class="reg-input">
+                    <input type="text" id="nim-field" name="nim" value="{{ old('nim') }}" placeholder="Contoh: 202201001" required class="reg-input">
                 </div>
 
                 {{-- Program Studi --}}
@@ -460,7 +393,7 @@
 
             {{-- Submit Button --}}
             <button type="submit" class="reg-submit-btn">
-                <span>Daftar Akun Sekarang</span>
+                <span>Daftar Akun Mahasiswa</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
@@ -474,56 +407,4 @@
         </form>
     </div>
 </section>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const radioMahasiswa = document.getElementById('role-mahasiswa');
-        const radioDosen = document.getElementById('role-dosen');
-        const tabMahasiswa = document.getElementById('tab-mahasiswa');
-        const tabDosen = document.getElementById('tab-dosen');
-        const nimBox = document.getElementById('nim-box');
-        const nidnBox = document.getElementById('nidn-box');
-        const nimField = document.getElementById('nim-field');
-        const nidnField = document.getElementById('nidn-field');
-
-        function updateRoleState(isMahasiswa) {
-            if (isMahasiswa) {
-                tabMahasiswa.classList.add('active');
-                tabDosen.classList.remove('active');
-
-                nimBox.style.display = 'flex';
-                nidnBox.style.display = 'none';
-                nimField.required = true;
-                nidnField.required = false;
-                nidnField.value = '';
-            } else {
-                tabDosen.classList.add('active');
-                tabMahasiswa.classList.remove('active');
-
-                nimBox.style.display = 'none';
-                nidnBox.style.display = 'flex';
-                nimField.required = false;
-                nidnField.required = true;
-                nimField.value = '';
-            }
-        }
-
-        if (radioMahasiswa && radioDosen) {
-            radioMahasiswa.addEventListener('change', () => updateRoleState(true));
-            tabMahasiswa.addEventListener('click', () => {
-                radioMahasiswa.checked = true;
-                updateRoleState(true);
-            });
-
-            radioDosen.addEventListener('change', () => updateRoleState(false));
-            tabDosen.addEventListener('click', () => {
-                radioDosen.checked = true;
-                updateRoleState(false);
-            });
-
-            // Inisialisasi sesuai kondisi awal
-            updateRoleState(radioMahasiswa.checked);
-        }
-    });
-</script>
 @endsection
